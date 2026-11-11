@@ -1,0 +1,28 @@
+{
+  "FileVersion": 3,
+  "EngineAssociation": "5.8",
+  "ProjectVersion": "0.0.2",
+  "Category": "",
+  "Description": "",
+  "Modules": [
+    {
+      "Name": "SugarLustUE",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    }
+  ],
+  "Plugins": [
+    {
+      "Name": "Fab",
+      "Enabled": false
+    },
+    {
+      "Name": "ModelingToolsEditorMode",
+      "Enabled": true,
+      "TargetAllowList": [
+        "Editor"
+      ]
+    }
+  ]
+}
+

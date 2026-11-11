@@ -1,0 +1,1098 @@
+{
+  "schemaVersion": 1,
+  "reviewedOn": "2026-11-11",
+  "project": "SugarLustUE.uproject",
+  "checkpoint": "Menu to casino floor to Sugar Lust to saved progress, one approved character, two presentation windows, and one Hot Streak claim",
+  "statusDefinitions": {
+    "working": "Executed successfully at the explicitly stated evidence level. Release acceptance is tracked separately.",
+    "incomplete": "Implementation exists, but required behavior or acceptance evidence is unfinished.",
+    "planned": "No integrated implementation was found for the intended player outcome.",
+    "blocked": "The next required implementation or verification step has a concrete unmet dependency."
+  },
+  "systems": [
+    {
+      "id": "REL-01",
+      "name": "Project identity and source control",
+      "status": "blocked",
+      "priority": "P0",
+      "column": "Ready",
+      "scope": "checkpoint",
+      "verifiedScope": "Descriptor and engine installation inspected; local commit cannot resolve",
+      "sources": [
+        "SugarLustUE.uproject",
+        "Source/SugarLustUE.Target.cs",
+        "Docs/Release/observations.json"
+      ],
+      "checks": [
+        "project-config",
+        "git-head"
+      ],
+      "dependsOn": [],
+      "blocker": "Local HEAD declares master, but Git cannot resolve this checkout. Remote updater repository uses main. A remote branch name is not the local source revision.",
+      "nextAction": "Restore a valid source-controlled checkout without discarding local work; compare the preserved source manifest and commit the approved baseline.",
+      "acceptance": "Project path, engine version, branch, exact commit, and source manifest agree; clean rebuild from a second checkout reproduces the candidate.",
+      "plan": [
+        "Retain Saved/ReleaseAudit/2026-11-11/baseline-source-manifest.json and binary backups.",
+        "Resolve the missing Git references or use a separate restored checkout; do not initialize over the existing metadata.",
+        "Record the real source revision in the next checkpoint manifest."
+      ],
+      "signoffs": [
+        "source-baseline"
+      ]
+    },
+    {
+      "id": "REL-02",
+      "name": "Unreal native build",
+      "status": "working",
+      "priority": "P0",
+      "column": "Verify",
+      "scope": "checkpoint",
+      "verifiedScope": "Current Unreal 5.8.4 Editor Development target, including the immutable spin retry fix and new test, compiled successfully on November 11 with project-local UBA storage.",
+      "sources": [
+        "Source/SugarLustUE/SugarLustUE.Build.cs",
+        "Source/SugarLustUEEditor.Target.cs"
+      ],
+      "checks": [
+        "editor-build"
+      ],
+      "dependsOn": [
+        "REL-01"
+      ],
+      "blocker": "Compiler 14.51 is newer than the engine's preferred 14.50; packaged Shipping verification remains separate.",
+      "nextAction": "Use Verify-Project.ps1 to retain reproducible build evidence and execute the complete Editor automation report.",
+      "acceptance": "Current source builds successfully, required automation tests execute, and toolchain versions are recorded.",
+      "plan": [
+        "Keep build caches and logs under Saved/ReleaseAudit rather than ProgramData.",
+        "Require a real automation report, not only process exit code zero.",
+        "Record warning review and compile Shipping through checkpoint packaging."
+      ],
+      "signoffs": [
+        "toolchain-review"
+      ]
+    },
+    {
+      "id": "REL-03",
+      "name": "Windows packaged build and launch",
+      "status": "blocked",
+      "priority": "P0",
+      "column": "Ready",
+      "scope": "checkpoint",
+      "verifiedScope": "Current Editor and Windows Shipping targets compile. UAT reports cook completion; a new package is blocked during staging by an engine-owned intermediate file write.",
+      "sources": [
+        "Tools/Release/Build-WindowsDemo.ps1",
+        "Backend/V0.0.2_RELEASE_STATUS.md"
+      ],
+      "checks": [
+        "windows-package",
+        "editor-automation"
+      ],
+      "dependsOn": [
+        "REL-02"
+      ],
+      "blocker": "AutomationTool tries to write Engine/Intermediate/Build/BuildCookRun/StagedBuild_SugarLustUE.ini under Program Files, which this session cannot write. No new archive or interactive launch is verified.",
+      "nextAction": "Complete the checkpoint in an environment permitted to stage with the installed Unreal engine, then verify the exact packaged executable with fresh and returning accounts.",
+      "acceptance": "A versioned Shipping artifact matching current source launches and completes the release smoke checklist without a blocker.",
+      "plan": [
+        "Preserve the original v0.0.2 candidate.",
+        "Build under a new Checkpoint directory with a source and artifact fingerprint.",
+        "Test on a clean extraction; verify prerequisites, content cooking, launch, exit, and restart."
+      ],
+      "signoffs": [
+        "windows-packaged-loop"
+      ]
+    },
+    {
+      "id": "REL-04",
+      "name": "Guest login and profile persistence",
+      "status": "incomplete",
+      "priority": "P0",
+      "column": "Ready",
+      "scope": "checkpoint",
+      "verifiedScope": "PlayFab CustomID login and profile restore exist; historical live verification is from October 31",
+      "sources": [
+        "Source/SugarLustUE/SugarLustRootWidget.cpp",
+        "Backend/PlayFabCloudScript/cloudscript.js"
+      ],
+      "checks": [
+        "settlement"
+      ],
+      "dependsOn": [
+        "REL-03",
+        "REL-05"
+      ],
+      "blocker": "No current packaged fresh-account, relaunch, or guest-account recovery acceptance record.",
+      "nextAction": "Verify login failure states, save permissions, returning identity, profile load, and restart with a dedicated account.",
+      "acceptance": "Fresh and returning accounts keep the same server-owned balances and pending features; access limitations are visible and no guest ID is erased.",
+      "plan": [
+        "Test offline launch and unavailable login without silently enabling a live-wallet fallback.",
+        "Test unwritable local identity storage.",
+        "Define a supported account recovery or link path before promising cross-device accounts."
+      ],
+      "signoffs": [
+        "live-account-loop"
+      ]
+    },
+    {
+      "id": "REL-05",
+      "name": "Authoritative coins and settlement",
+      "status": "working",
+      "priority": "P0",
+      "column": "Verify",
+      "scope": "checkpoint",
+      "verifiedScope": "32 isolated bridge-to-gateway transaction tests passed on November 11",
+      "sources": [
+        "Backend/NakamaRuntime/economy-settlement.js",
+        "Backend/NakamaRuntime/economy-domain.js",
+        "Backend/Tests/settlement.test.js"
+      ],
+      "checks": [
+        "runtime-bundle",
+        "settlement"
+      ],
+      "dependsOn": [],
+      "blocker": "Current deployed hashes, real database concurrency, and load behavior are not attested by local tests.",
+      "nextAction": "Verify deployed runtime and bridge hashes, then run dedicated-account replay, contention, and response-loss checks in staging.",
+      "acceptance": "Wager, payout, feature state, XP, gems, and durable receipt commit together; duplicate and concurrent requests never double-settle.",
+      "plan": [
+        "Retain the permanent receipt and version-checked account model.",
+        "Verify all enabled games against one authoritative wallet.",
+        "Record real-database evidence before granting release acceptance."
+      ],
+      "signoffs": [
+        "live-transaction-recovery"
+      ]
+    },
+    {
+      "id": "REL-06",
+      "name": "Sugar Lust base game",
+      "status": "incomplete",
+      "priority": "P0",
+      "column": "Ready",
+      "scope": "checkpoint",
+      "verifiedScope": "5 by 3 and 20-payline client and authoritative rules exist; backend regressions pass",
+      "sources": [
+        "Source/SugarLustUE/SugarLustSlotMachine.cpp",
+        "Source/SugarLustUE/SugarLustRootWidget.cpp",
+        "Backend/NakamaRuntime/index.core.js"
+      ],
+      "checks": [
+        "settlement",
+        "free-spins",
+        "editor-automation"
+      ],
+      "dependsOn": [
+        "REL-03",
+        "REL-04",
+        "REL-05",
+        "REL-34"
+      ],
+      "blocker": "Current packaged controls, reels, visual payouts, low funds, and return flow lack direct acceptance evidence.",
+      "nextAction": "Run the complete Sugar Lust loop in the new checkpoint and fix each observed defect before adding expansion gameplay.",
+      "acceptance": "Wagers, wins, wilds, paylines, controls, autoplay stop, rejection, navigation, and restart match authoritative results.",
+      "plan": [
+        "Verify minimum and maximum wager and active-line changes.",
+        "Compare displayed win highlights with the settled result.",
+        "Record a normal spin, a loss, a win, low funds, a bonus, and return to menu."
+      ],
+      "signoffs": [
+        "sugar-lust-loop"
+      ]
+    },
+    {
+      "id": "REL-07",
+      "name": "Neon Nights base game",
+      "status": "incomplete",
+      "priority": "P1",
+      "column": "Ready",
+      "scope": "expansion",
+      "verifiedScope": "5 by 4 all-ways rules, feedback tests, and server settlement exist",
+      "sources": [
+        "Source/SugarLustUE/Tests/NeonNightsFeedbackTests.cpp",
+        "Source/SugarLustUE/SugarLustRootWidget.cpp"
+      ],
+      "checks": [
+        "free-spins",
+        "settlement",
+        "editor-automation"
+      ],
+      "dependsOn": [
+        "REL-06"
+      ],
+      "blocker": "Packaged win feedback, Muse artwork, hold feature and device layout need verification.",
+      "nextAction": "Verify Neon separately using the same release loop and preserve one shared wallet across game changes.",
+      "acceptance": "Ways payouts, wilds, Muse, highlights, autoplay, feature transitions and resume match server results.",
+      "plan": [
+        "Run all Neon feedback automation tests in the actual rebuilt module.",
+        "Test repeated entry and exit and cross-game balance updates.",
+        "Verify symbols and payout audio on both release platforms."
+      ],
+      "signoffs": [
+        "neon-nights-loop"
+      ]
+    },
+    {
+      "id": "REL-08",
+      "name": "Candy Jar bonus",
+      "status": "incomplete",
+      "priority": "P0",
+      "column": "Verify",
+      "scope": "checkpoint",
+      "verifiedScope": "Server picks and payout concurrency are covered by settlement tests",
+      "sources": [
+        "Backend/NakamaRuntime/economy-domain.js",
+        "Source/SugarLustUE/SugarLustSlotMachine.cpp"
+      ],
+      "checks": [
+        "settlement",
+        "free-spins"
+      ],
+      "dependsOn": [
+        "REL-06"
+      ],
+      "blocker": "Current packaged pick animation, duplicate input, final collection, and restart recovery need playback verification.",
+      "nextAction": "Test three picks, repeated cards, response loss on the final pick, and relaunch during the bonus.",
+      "acceptance": "Only valid picks reveal; final reward pays once; pending cards and payout survive restart.",
+      "plan": [
+        "Keep picks and payouts server-owned.",
+        "Confirm presentation cannot accept input before the trusted response.",
+        "Verify exit and resume at each pick count."
+      ],
+      "signoffs": [
+        "candy-jar-resume"
+      ]
+    },
+    {
+      "id": "REL-09",
+      "name": "Free spins and Neon Heat",
+      "status": "incomplete",
+      "priority": "P0",
+      "column": "Verify",
+      "scope": "checkpoint",
+      "verifiedScope": "Free wager, locking, retry, retrigger and bonus isolation backend checks passed",
+      "sources": [
+        "Backend/Tests/free-spins.test.js",
+        "Backend/NakamaRuntime/economy-domain.js",
+        "Source/SugarLustUE/Tests/NeonNightsFeedbackTests.cpp"
+      ],
+      "checks": [
+        "free-spins",
+        "settlement",
+        "editor-automation"
+      ],
+      "dependsOn": [
+        "REL-06",
+        "REL-07"
+      ],
+      "blocker": "Visible pause, payout hold, cross-game pending state, and relaunch behavior remain unverified in the current package.",
+      "nextAction": "Verify queued free spins and Neon Heat completion on a dedicated account without forced live rewards.",
+      "acceptance": "Locked wagers, remaining counts and pending payouts persist; retries do not consume another round.",
+      "plan": [
+        "Test automatic and manual pause/resume.",
+        "Verify Candy Jar and Neon Heat temporarily suspend free-spin continuation.",
+        "Record restart during a feature and final completion."
+      ],
+      "signoffs": [
+        "free-spin-resume"
+      ]
+    },
+    {
+      "id": "REL-10",
+      "name": "Progressive jackpots",
+      "status": "incomplete",
+      "priority": "P1",
+      "column": "Verify",
+      "scope": "checkpoint",
+      "verifiedScope": "Award, reset and credit atomicity pass isolated settlement tests",
+      "sources": [
+        "Backend/NakamaRuntime/index.core.js",
+        "Backend/JACKPOT_SYMBOLS_DEPLOYMENT.md",
+        "Source/SugarLustUE/SugarLustRootWidget.cpp"
+      ],
+      "checks": [
+        "settlement",
+        "free-spins"
+      ],
+      "dependsOn": [
+        "REL-05",
+        "REL-06"
+      ],
+      "blocker": "Live pool consistency, meter refresh, feature presentation, and payout math review are outstanding.",
+      "nextAction": "Verify shared pool reads and deterministic staging jackpot awards with real storage; reconcile all displayed tiers.",
+      "acceptance": "Contribution, award, pool reset, wallet credit and receipt are consistent; presentation uses the server tier and amount.",
+      "plan": [
+        "Keep progressive awards separate from paytable RTP.",
+        "Verify delayed meter responses cannot overwrite newer data.",
+        "Measure contribution and jackpot behavior from the locked release configuration."
+      ],
+      "signoffs": [
+        "progressive-staging"
+      ]
+    },
+    {
+      "id": "REL-11",
+      "name": "Daily rewards and streak",
+      "status": "incomplete",
+      "priority": "P1",
+      "column": "Verify",
+      "scope": "checkpoint",
+      "verifiedScope": "Authoritative daily claim versus wager race passes isolated testing",
+      "sources": [
+        "Backend/NakamaRuntime/economy-domain.js",
+        "Source/SugarLustUE/SugarLustRootWidget.cpp"
+      ],
+      "checks": [
+        "settlement"
+      ],
+      "dependsOn": [
+        "REL-04",
+        "REL-05",
+        "REL-16"
+      ],
+      "blocker": "Current menu claim, UTC reset display, duplicate tap and relaunch need verification.",
+      "nextAction": "Verify first claim, repeat claim, missed day, server rollover and countdown in staging.",
+      "acceptance": "One eligible reward is granted per server day and the UI reflects authoritative eligibility and streak.",
+      "plan": [
+        "Keep event Heat separate from the existing daily streak.",
+        "Test claim while a wager settles on another device.",
+        "Verify an unavailable service leaves a useful retry state."
+      ],
+      "signoffs": [
+        "daily-reward-loop"
+      ]
+    },
+    {
+      "id": "REL-12",
+      "name": "XP levels and missions",
+      "status": "incomplete",
+      "priority": "P1",
+      "column": "Verify",
+      "scope": "checkpoint",
+      "verifiedScope": "Mission claim races, XP settlement and server-owned mission records are implemented",
+      "sources": [
+        "Backend/NakamaRuntime/economy-domain.js",
+        "Source/SugarLustUE/SugarLustSlotMachine.cpp",
+        "Source/SugarLustUE/SugarLustRootWidget.cpp"
+      ],
+      "checks": [
+        "settlement"
+      ],
+      "dependsOn": [
+        "REL-05",
+        "REL-16"
+      ],
+      "blocker": "Packaged progress feedback, daily reset, level display, and mission claim persistence lack current acceptance evidence.",
+      "nextAction": "Complete and claim one mission, verify duplicate protection, and compare XP across game changes and restart.",
+      "acceptance": "Only trusted progress and rewards apply; displayed levels and mission states survive relaunch.",
+      "plan": [
+        "Verify local demo missions never write the online economy.",
+        "Confirm claim errors recover with the original claim identity.",
+        "Document and verify any level-based access gates before advertising them."
+      ],
+      "signoffs": [
+        "missions-and-xp"
+      ]
+    },
+    {
+      "id": "REL-13",
+      "name": "Gem earnings and LUSTVEND transactions",
+      "status": "working",
+      "priority": "P1",
+      "column": "Verify",
+      "scope": "checkpoint",
+      "verifiedScope": "19 Nakama and PlayFab tests passed; Python HTTP transport has a separate socket blocker",
+      "sources": [
+        "Backend/NakamaRuntime/test_lustvend.js",
+        "Backend/NakamaRuntime/index.core.js",
+        "Source/SugarLustUE/LustVendWidget.cpp"
+      ],
+      "checks": [
+        "lustvend",
+        "settlement",
+        "lustvend-python"
+      ],
+      "dependsOn": [
+        "REL-05"
+      ],
+      "blocker": "Local HTTP transport and real packaged purchase/reconnect acceptance are not complete.",
+      "nextAction": "Verify one supported purchase, duplicate submission, collection, gem milestone and restart against staging.",
+      "acceptance": "Server prices, gem debit, ownership and receipt reconcile exactly; empty rewards cannot be presented as delivered content.",
+      "plan": [
+        "Preserve original purchase IDs through uncertain responses.",
+        "Keep ownership and currency changes atomic.",
+        "Retest socket transport in an environment that permits loopback networking."
+      ],
+      "signoffs": [
+        "lustvend-live-loop"
+      ]
+    },
+    {
+      "id": "REL-14",
+      "name": "Reward library and actual content",
+      "status": "incomplete",
+      "priority": "P1",
+      "column": "Ready",
+      "scope": "checkpoint",
+      "verifiedScope": "Ownership-gated image and video viewer exists; configured media slots are empty",
+      "sources": [
+        "Source/SugarLustUE/LustVendWidget.cpp",
+        "Backend/LustVend/REWARD_LIBRARY.md",
+        "Config/DefaultGame.ini"
+      ],
+      "checks": [
+        "editor-automation"
+      ],
+      "dependsOn": [
+        "REL-13",
+        "REL-33"
+      ],
+      "blocker": "Approved reward media and packaged playback evidence have not been supplied.",
+      "nextAction": "Attach one approved supported reward, cook it, and verify opening, navigation, mute, repeat viewing and return.",
+      "acceptance": "Owned rewards show actual approved content on both platforms without another debit; missing content stays clearly unavailable.",
+      "plan": [
+        "Use stable SKU-to-content records.",
+        "Validate video paths and supported formats.",
+        "Do not sell a placeholder as completed media."
+      ],
+      "signoffs": [
+        "reward-content-playback"
+      ]
+    },
+    {
+      "id": "REL-15",
+      "name": "Cosmetic ownership and equipment",
+      "status": "planned",
+      "priority": "P2",
+      "column": "Backlog",
+      "scope": "expansion",
+      "verifiedScope": "Avatar and theme packages currently offer previews; no wearable equipment path found",
+      "sources": [
+        "Backend/LustVend/REWARD_LIBRARY.md",
+        "Config/DefaultGame.ini"
+      ],
+      "checks": [],
+      "dependsOn": [
+        "REL-13",
+        "REL-20"
+      ],
+      "blocker": "Typed cosmetic catalog, equipment slots and compatible approved assets are missing.",
+      "nextAction": "Implement server-validated entitlements and equip selections with compatible avatar slots and a packaged preview.",
+      "acceptance": "Only owned compatible items equip, persist across restart and render correctly without changing currency twice.",
+      "plan": [
+        "Define RewardId, RewardKind, EquipSlot and CompatibleAvatarIds.",
+        "Commit equipment changes with a durable idempotent request.",
+        "Keep the first Pepper reward on a supported presentation path until wearable production is complete."
+      ],
+      "signoffs": [
+        "cosmetic-equipment"
+      ]
+    },
+    {
+      "id": "REL-16",
+      "name": "Main menu and navigation",
+      "status": "incomplete",
+      "priority": "P1",
+      "column": "Ready",
+      "scope": "checkpoint",
+      "verifiedScope": "Runtime hit targets and primary destinations exist; event entry is hardwired to Spin Duel",
+      "sources": [
+        "Source/SugarLustUE/SugarLustRootWidget.cpp",
+        "Content/Art/MainMenu/T_MainMenu.uasset"
+      ],
+      "checks": [
+        "editor-automation"
+      ],
+      "dependsOn": [
+        "REL-03"
+      ],
+      "blocker": "Selected-avatar presentation and event selector are absent; several menu buttons lead to notices.",
+      "nextAction": "Connect runtime avatar and event state, expose a shared event selector, and visibly label destinations whose actual systems are not ready.",
+      "acceptance": "Every visible active destination works; unavailable states are explicit; player numbers are runtime text; keyboard and touch navigation return safely.",
+      "plan": [
+        "Preserve access to Spin Duel practice.",
+        "Verify Daily Rewards and casino-floor entry from the actual menu artwork.",
+        "Test every destination and close/back path in the packaged build."
+      ],
+      "signoffs": [
+        "menu-navigation"
+      ]
+    },
+    {
+      "id": "REL-17",
+      "name": "Casino floor movement seating and cabinets",
+      "status": "incomplete",
+      "priority": "P1",
+      "column": "Verify",
+      "scope": "checkpoint",
+      "verifiedScope": "Venue routes, seating and input automation exist; local floor is a prototype",
+      "sources": [
+        "Source/SugarLustUE/SocialCasinoPrototype.cpp",
+        "Source/SugarLustUE/CasinoFloorRoute.h",
+        "Source/SugarLustUE/CasinoCabinetControls.cpp"
+      ],
+      "checks": [
+        "editor-automation"
+      ],
+      "dependsOn": [
+        "REL-16",
+        "REL-06"
+      ],
+      "blocker": "Current packaged stage routes, cabinet framing, touch targets and repeated enter/leave need playback verification.",
+      "nextAction": "Run route, seating and widget lifetime tests, then test walking, sitting, play, standing and return on the actual floor.",
+      "acceptance": "No clipping or softlock on supported routes; cabinet controls retain account session and safe focus; floor exits restore the menu.",
+      "plan": [
+        "Verify streaming and authored map cooking.",
+        "Measure collisions and camera framing on device.",
+        "Separate prototype NPCs from any claim of network multiplayer."
+      ],
+      "signoffs": [
+        "casino-floor-loop"
+      ]
+    },
+    {
+      "id": "REL-18",
+      "name": "Spin Duel practice event",
+      "status": "incomplete",
+      "priority": "P2",
+      "column": "Ready",
+      "scope": "expansion",
+      "verifiedScope": "Practice encounter rules and actor/streamed grove implementation exist",
+      "sources": [
+        "Source/SugarLustUE/SpinDuelRun.cpp",
+        "Source/SugarLustUE/SpinDuelRules.h",
+        "Source/SugarLustUE/Tests/SpinDuelRulesTests.cpp"
+      ],
+      "checks": [
+        "editor-automation"
+      ],
+      "dependsOn": [
+        "REL-16",
+        "REL-17"
+      ],
+      "blocker": "Practice flow is not an online seasonal reward event; packaged grove loading and mobile controls need verification.",
+      "nextAction": "Verify the entire labeled practice run, exit/resume, win/loss, held reels and return before defining any online rewards.",
+      "acceptance": "Practice works end to end with clear temporary scoring and cannot debit or grant the online wallet.",
+      "plan": [
+        "Keep practice entry independent of the featured event.",
+        "Test missing-map fallback and cleanup.",
+        "Treat online event economy and rewards as a separately versioned implementation if later required."
+      ],
+      "signoffs": [
+        "spin-duel-practice"
+      ]
+    },
+    {
+      "id": "REL-19",
+      "name": "Mega Lust Pot online game",
+      "status": "blocked",
+      "priority": "P2",
+      "column": "Ready",
+      "scope": "expansion",
+      "verifiedScope": "16 isolated transactional tests pass; online client recovery and rule simulation exist",
+      "sources": [
+        "Source/SugarLustUE/MegaLustPotOnline.cpp",
+        "Backend/MEGA_POT_ONLINE_DEPLOYMENT.md",
+        "Backend/Tests/mega-pot.test.js"
+      ],
+      "checks": [
+        "mega-pot",
+        "settlement",
+        "editor-automation"
+      ],
+      "dependsOn": [
+        "REL-05",
+        "REL-27"
+      ],
+      "blocker": "Deployment guide explicitly states the prepared Mega Pot bundle has not been enabled remotely; final art and device tests remain.",
+      "nextAction": "Verify the prepared versioned bundle, deploy through controlled staging access, and test sync, wager replay, feature continuation and reconnect.",
+      "acceptance": "Online pot counters and locked wagers persist per bet with one shared wallet; no local practice fallback can settle currency.",
+      "plan": [
+        "Preserve the existing deployed economy and receipts.",
+        "Verify runtime and bridge compatibility and versioned math.",
+        "Complete art, cabinet fit and platform acceptance before enabling public entry."
+      ],
+      "signoffs": [
+        "mega-pot-live-loop"
+      ]
+    },
+    {
+      "id": "REL-20",
+      "name": "Jester character production and deployment",
+      "status": "incomplete",
+      "priority": "P1",
+      "column": "Ready",
+      "scope": "checkpoint",
+      "verifiedScope": "JesterTest and JesterTestV2 meshes, skeletons and animations plus a test map are present",
+      "sources": [
+        "Content/Art/Characters/JesterTestV2/SK_LHC_Jester_Clean.uasset",
+        "Content/Maps/Tests/JesterMovementTest.umap",
+        "Source/SugarLustUE/SocialCasinoPrototype.cpp"
+      ],
+      "checks": [],
+      "dependsOn": [
+        "REL-33"
+      ],
+      "blocker": "Current main-game code uses other prototype people; final textures, UV/deformation review, approved asset version and performance evidence are absent.",
+      "nextAction": "Complete one stable Jester record, inspect UVs and deformation, texture it, and connect the approved export to the real menu or scene.",
+      "acceptance": "One approved character renders, animates and fits the real scene, with reproducible source/rig/material records and measured device cost.",
+      "plan": [
+        "Link Character Studio and Production IDs instead of creating another roster.",
+        "Review hands, feet, arm spacing, hips, shoulders, wrists and skeleton compatibility.",
+        "Choose one approved export; leave test variants out of the public character selection."
+      ],
+      "signoffs": [
+        "jester-visual-and-performance"
+      ]
+    },
+    {
+      "id": "REL-21",
+      "name": "Time of day character presentation",
+      "status": "planned",
+      "priority": "P1",
+      "column": "Backlog",
+      "scope": "checkpoint",
+      "verifiedScope": "No integrated schedule or safe-boundary host swap found",
+      "sources": [
+        "Source/SugarLustUE/SugarLustRootWidget.cpp",
+        "Source/SugarLustUE/SugarLustGameInstance.cpp"
+      ],
+      "checks": [],
+      "dependsOn": [
+        "REL-20",
+        "REL-16"
+      ],
+      "blocker": "One approved deployable character and presentation record are prerequisites.",
+      "nextAction": "Implement two configurable local-time windows, development preview, event-host precedence and asset fallback at safe menu transitions.",
+      "acceptance": "Both windows, midnight boundaries, event override and missing assets are predictable; swaps do not interrupt spins or mandatory presentations.",
+      "plan": [
+        "Use player-local time for presentation and server time for reward/event deadlines.",
+        "Begin with one character and two looks if that is the available approved art.",
+        "Persist user selection and entitlement rules where required."
+      ],
+      "signoffs": [
+        "presentation-windows"
+      ]
+    },
+    {
+      "id": "REL-22",
+      "name": "Hot Streak with Pepper event",
+      "status": "planned",
+      "priority": "P1",
+      "column": "Backlog",
+      "scope": "checkpoint",
+      "verifiedScope": "Detailed November 9 design exists; no integrated Pepper or HotStreak runtime was found",
+      "sources": [
+        "Backend/NakamaRuntime/economy-domain.js",
+        "Source/SugarLustUE/SugarLustRootWidget.cpp"
+      ],
+      "checks": [],
+      "dependsOn": [
+        "REL-05",
+        "REL-06",
+        "REL-14",
+        "REL-16"
+      ],
+      "blocker": "Rules need frozen configuration, supported Mild reward content, server grant path and approved placeholder presentation.",
+      "nextAction": "Implement the Sugar Lust slice: three paid wins, persistent Heat, one panel, queued Pepper reaction and an idempotent supported Mild claim.",
+      "acceptance": "W W W W L yields Heat 0 0 1 2 2; free and bonus rounds freeze progress; restart/replay/concurrency and deadlines never duplicate rewards.",
+      "plan": [
+        "Use the existing implementation plan; add atomic progress and permanent claim receipts to authoritative settlement.",
+        "Choose a supported owned media or presentation reward before offering an unimplemented wearable.",
+        "Validate staging and packaged play before adding Neon support or the full reward ladder."
+      ],
+      "signoffs": [
+        "pepper-first-claim"
+      ]
+    },
+    {
+      "id": "REL-23",
+      "name": "Audio settings scaling and accessibility",
+      "status": "incomplete",
+      "priority": "P1",
+      "column": "Ready",
+      "scope": "checkpoint",
+      "verifiedScope": "Music/SFX controls, scaling, procedural payout audio and cues exist",
+      "sources": [
+        "Source/SugarLustUE/SugarLustRootWidget.cpp",
+        "Source/SugarLustUE/Tests/NeonNightsFeedbackTests.cpp"
+      ],
+      "checks": [
+        "editor-automation"
+      ],
+      "dependsOn": [
+        "REL-16",
+        "REL-17"
+      ],
+      "blocker": "Actual audio playback, safe areas, readable UI and keyboard/touch focus are not verified in current packages.",
+      "nextAction": "Verify settings persistence, mute behavior, payout priority, phone safe areas and every release-critical input path.",
+      "acceptance": "Audio respects settings without overlaps; text and controls remain usable at target sizes; motion and voiced dialogue have suitable controls/subtitles when present.",
+      "plan": [
+        "Test 1920 by 1080, wide phones and cabinet overlays.",
+        "Verify settings survive rebuilds and relaunch.",
+        "Profile UI and avoid critical information baked into artwork."
+      ],
+      "signoffs": [
+        "audio-input-layout"
+      ]
+    },
+    {
+      "id": "REL-24",
+      "name": "Updater versioning and public distribution",
+      "status": "blocked",
+      "priority": "P0",
+      "column": "Ready",
+      "scope": "checkpoint",
+      "verifiedScope": "Local 0.0.2 differs from public update.json 0.1.0 verified on November 11",
+      "sources": [
+        "Source/SugarLustUE/SugarLustUpdatePolicy.cpp",
+        "Config/DefaultGame.ini",
+        "Backend/V0.0.2_RELEASE_STATUS.md",
+        "Docs/Release/observations.json"
+      ],
+      "checks": [
+        "project-config",
+        "editor-automation"
+      ],
+      "dependsOn": [
+        "REL-03",
+        "REL-33"
+      ],
+      "blocker": "The live manifest advertises a different version; candidate URLs and final release selection must be coordinated.",
+      "nextAction": "Prepare a manifest from the accepted artifact/version and publish it only after those downloads exist and the release is approved.",
+      "acceptance": "Project, Android version, packaged executable and published manifest agree; only allowed HTTPS downloads are offered.",
+      "plan": [
+        "Run update policy automation against malformed versions and unsafe URLs.",
+        "Verify clean install and update guidance.",
+        "Keep preparation separate from public publishing until the review build passes."
+      ],
+      "signoffs": [
+        "distribution-manifest"
+      ]
+    },
+    {
+      "id": "REL-25",
+      "name": "Android signed package and device behavior",
+      "status": "blocked",
+      "priority": "P1",
+      "column": "Ready",
+      "scope": "expansion",
+      "verifiedScope": "October 31 release APK and signature audit exist; no current physical-device result",
+      "sources": [
+        "Tools/Release/Build-AndroidDemo.ps1",
+        "Backend/V0.0.2_RELEASE_STATUS.md",
+        "Config/DefaultEngine.ini"
+      ],
+      "checks": [],
+      "dependsOn": [
+        "REL-03",
+        "REL-23"
+      ],
+      "blocker": "Current release certificate, device acceptance and exact release channel requirements need verification; guest identity must survive installation handling.",
+      "nextAction": "Build with the retained signing identity and test the exact APK on the Motorola Edge 2024 without erasing an unrecovered guest account.",
+      "acceptance": "Signed non-debuggable package installs through the intended channel, includes data, and passes gameplay, feature resume, layout, relaunch and performance checks.",
+      "plan": [
+        "Keep private keys/passwords outside source and public artifacts.",
+        "Verify the target channel SDK requirements before store submission.",
+        "Retain artifact hashes and signing verification with the matching source fingerprint."
+      ],
+      "signoffs": [
+        "android-device-loop"
+      ]
+    },
+    {
+      "id": "REL-26",
+      "name": "Performance stability and release soak",
+      "status": "blocked",
+      "priority": "P0",
+      "column": "Ready",
+      "scope": "checkpoint",
+      "verifiedScope": "Historical crashes and builds exist; no measured current soak or target-device performance report",
+      "sources": [
+        "Source/SugarLustUE/SugarLustRootWidget.cpp",
+        "Source/SugarLustUE/SocialCasinoPrototype.cpp"
+      ],
+      "checks": [
+        "editor-automation",
+        "windows-package"
+      ],
+      "dependsOn": [
+        "REL-03",
+        "REL-20",
+        "REL-23"
+      ],
+      "blocker": "A chosen test device, accepted frame/memory budget and instrumented current checkpoint are needed.",
+      "nextAction": "Measure launch, floor, character, repeated spins, rewards, background/resume and repeated transitions on the exact candidate.",
+      "acceptance": "No crashes, balance defects or softlocks during the agreed soak; measured frame time and memory stay inside the recorded device budget.",
+      "plan": [
+        "Record the device and graphics settings.",
+        "Use profiling evidence to choose LOD, material and texture changes.",
+        "Re-run the soak after changes affecting assets, streaming or presentation."
+      ],
+      "signoffs": [
+        "performance-soak"
+      ]
+    },
+    {
+      "id": "REL-27",
+      "name": "Backend deployment operations and recovery",
+      "status": "blocked",
+      "priority": "P0",
+      "column": "Ready",
+      "scope": "checkpoint",
+      "verifiedScope": "Deployment and migration helpers exist; no current service access or restore evidence",
+      "sources": [
+        "Backend/SETTLEMENT_DEPLOYMENT.md",
+        "Tools/Backend/finish-settlement-setup.js",
+        "Backend/NakamaRuntime/README.md"
+      ],
+      "checks": [
+        "setup-workflow",
+        "runtime-bundle"
+      ],
+      "dependsOn": [
+        "REL-05"
+      ],
+      "blocker": "Current deployment access, monitoring, limits, backups and real restore results are unavailable locally.",
+      "nextAction": "Verify deployed hashes and service health, staging access, private administrative endpoints, backups and a tested restore procedure.",
+      "acceptance": "The exact backend release is known, monitored, limited and recoverable without resetting accounts or permanent receipts.",
+      "plan": [
+        "Use dedicated tester accounts and never log service credentials.",
+        "Keep supported forward fixes for authoritative data.",
+        "Record a maintenance and incident runbook with evidence of recovery."
+      ],
+      "signoffs": [
+        "service-operations"
+      ]
+    },
+    {
+      "id": "REL-28",
+      "name": "Friends and network social presence",
+      "status": "planned",
+      "priority": "P2",
+      "column": "Backlog",
+      "scope": "expansion",
+      "verifiedScope": "Friends button explicitly says multiplayer is not connected",
+      "sources": [
+        "Source/SugarLustUE/SugarLustRootWidget.cpp",
+        "Source/SugarLustUE/SocialCasinoPrototype.cpp"
+      ],
+      "checks": [],
+      "dependsOn": [
+        "REL-04",
+        "REL-27"
+      ],
+      "blocker": "Account linking, social data model, permissions and real network room authority are not implemented.",
+      "nextAction": "Implement a bounded first social slice with requests, accepted friends, presence, block/remove and two-account verification.",
+      "acceptance": "Two real test accounts can connect and disconnect consistently; private data and blocked users remain protected; local NPCs are never described as live players.",
+      "plan": [
+        "Choose one authoritative social backend.",
+        "Implement authenticated requests and user privacy controls.",
+        "Add room synchronization only after friend and presence state work."
+      ],
+      "signoffs": [
+        "friends-two-account"
+      ]
+    },
+    {
+      "id": "REL-29",
+      "name": "Inbox and notifications",
+      "status": "planned",
+      "priority": "P2",
+      "column": "Backlog",
+      "scope": "expansion",
+      "verifiedScope": "Inbox currently displays an empty notice without an inbox data model",
+      "sources": [
+        "Source/SugarLustUE/SugarLustRootWidget.cpp"
+      ],
+      "checks": [],
+      "dependsOn": [
+        "REL-04",
+        "REL-27"
+      ],
+      "blocker": "Persistent message records, delivery identity and read/dismiss APIs are missing.",
+      "nextAction": "Implement server-authored announcements with stable IDs, read/dismiss state, empty/loading/error states and expiry.",
+      "acceptance": "Messages persist correctly per account and cannot grant a reward twice; relaunch and expiry preserve consistent unread state.",
+      "plan": [
+        "Start with announcements rather than unrestricted player messaging.",
+        "Use a separate durable claim transaction for any attached reward.",
+        "Verify pagination, duplicate delivery and read-state synchronization."
+      ],
+      "signoffs": [
+        "inbox-delivery"
+      ]
+    },
+    {
+      "id": "REL-30",
+      "name": "VIP progression and rewards",
+      "status": "planned",
+      "priority": "P2",
+      "column": "Backlog",
+      "scope": "expansion",
+      "verifiedScope": "VIP destination is a coming-soon notice; Mint is a character concept rather than an integrated VIP system",
+      "sources": [
+        "Source/SugarLustUE/SugarLustRootWidget.cpp"
+      ],
+      "checks": [],
+      "dependsOn": [
+        "REL-05",
+        "REL-13",
+        "REL-15"
+      ],
+      "blocker": "VIP qualification rules, authoritative progress, reward schedule and supported content need design and implementation.",
+      "nextAction": "Freeze one versioned VIP progression model and implement trusted progress, tier display and one durable reward claim.",
+      "acceptance": "Progress and benefits are reproducible from trusted activity, correctly displayed and granted once across retries and restart.",
+      "plan": [
+        "Keep VIP progression distinct from character-host scheduling.",
+        "Add the supported reward path before advertising benefits.",
+        "Test downgrade, rollover and rule-version migration where applicable."
+      ],
+      "signoffs": [
+        "vip-progression-claim"
+      ]
+    },
+    {
+      "id": "REL-31",
+      "name": "Store coin purchases and piggy bank",
+      "status": "planned",
+      "priority": "P2",
+      "column": "Backlog",
+      "scope": "expansion",
+      "verifiedScope": "Store, coin purchase and piggy-bank buttons currently show notices",
+      "sources": [
+        "Source/SugarLustUE/SugarLustRootWidget.cpp"
+      ],
+      "checks": [],
+      "dependsOn": [
+        "REL-05",
+        "REL-27",
+        "REL-33"
+      ],
+      "blocker": "Product definitions, platform billing, server receipt verification and delivery/recovery are absent.",
+      "nextAction": "Choose the release channel and product model, then implement sandbox billing with server-verified idempotent delivery before enabling any purchase UI.",
+      "acceptance": "Only verified receipts credit the correct account once; replay, cancellation, pending payment, restoration and channel-specific reversals are tested.",
+      "plan": [
+        "Keep unavailable purchases visibly disabled in the checkpoint.",
+        "Implement a piggy-bank ledger only after its earning and release rules are frozen.",
+        "Use billing sandbox evidence and reviewed product disclosures before public activation."
+      ],
+      "signoffs": [
+        "billing-sandbox"
+      ]
+    },
+    {
+      "id": "REL-32",
+      "name": "Tournaments and additional games",
+      "status": "planned",
+      "priority": "P2",
+      "column": "Backlog",
+      "scope": "expansion",
+      "verifiedScope": "Tournament and extra game cards are coming-soon notices",
+      "sources": [
+        "Source/SugarLustUE/SugarLustRootWidget.cpp"
+      ],
+      "checks": [],
+      "dependsOn": [
+        "REL-05",
+        "REL-22",
+        "REL-28"
+      ],
+      "blocker": "No integrated tournament rules, ranking, tie-break, settlement or approved additional game specification.",
+      "nextAction": "Define and implement one versioned tournament with trusted scoring, deterministic tie-breaks, an end boundary and one claim path; scope each additional game as its own board record.",
+      "acceptance": "Ranking and final rewards remain correct under simultaneous play, late results, replay and restart; each enabled game has its own full-loop acceptance.",
+      "plan": [
+        "Capture individual future games in this board rather than treating a card as implementation.",
+        "Test multiple accounts and event boundaries in staging.",
+        "Keep new game math and reward cost separate from presentation art."
+      ],
+      "signoffs": [
+        "tournament-finalization"
+      ]
+    },
+    {
+      "id": "REL-33",
+      "name": "Asset provenance and release content",
+      "status": "blocked",
+      "priority": "P0",
+      "column": "Ready",
+      "scope": "checkpoint",
+      "verifiedScope": "Imported art, music, voice and third-party characters exist; no complete release asset manifest was found",
+      "sources": [
+        "Content/Art",
+        "Backend/V0.0.2_RELEASE_STATUS.md"
+      ],
+      "checks": [],
+      "dependsOn": [],
+      "blocker": "Approved release assets, redistribution evidence and final content/channel classifications must be supplied or reviewed.",
+      "nextAction": "Create an asset manifest linking each shipped asset to its source, terms, approval, AI provenance where applicable and intended platform; replace anything without a valid release path.",
+      "acceptance": "Every shipped asset has a retained usable provenance record and approved public presentation; advertised rewards match actual content.",
+      "plan": [
+        "Keep editable character sources separate from approved game exports.",
+        "Exclude test-only character variants and unused placeholder rewards from the public roster.",
+        "Record the intended distribution channel and its content disclosures."
+      ],
+      "signoffs": [
+        "release-content-review"
+      ]
+    },
+    {
+      "id": "REL-34",
+      "name": "Client interrupted-request recovery",
+      "status": "incomplete",
+      "priority": "P0",
+      "column": "Ready",
+      "scope": "checkpoint",
+      "verifiedScope": "Original spin parameters are now retained for Sugar Lust and Neon manual retries, and pending wagers are locked. Server receipts are durable; restart recovery remains incomplete.",
+      "sources": [
+        "Source/SugarLustUE/SugarLustRootWidget.cpp",
+        "Source/SugarLustUE/MegaLustPotOnline.cpp",
+        "Backend/Tests/settlement.test.js"
+      ],
+      "checks": [
+        "settlement",
+        "editor-automation"
+      ],
+      "dependsOn": [
+        "REL-05"
+      ],
+      "blocker": "Primary slot pending requests are still held in widget memory. Durable journal recovery, definitive rejection handling and current packaged acceptance remain unfinished.",
+      "nextAction": "Verify the immutable-request fix, then persist the complete account-scoped request before send and reconcile it after login before new play.",
+      "acceptance": "Disconnect, wager changes, scene change and application restart always recover the original request; no changed fingerprint, duplicate charge or lost unresolved operation.",
+      "plan": [
+        "Implemented locally: retain original wager parameters and prevent wager/line changes while a request is unresolved; compile and run PendingSpinIdentity automation.",
+        "Add the durable account-scoped journal and a trusted definite-rejection contract; keep ambiguous failures pending.",
+        "Test result-parse failure, commit-then-response-loss, application restart, corrupted journal and cross-account callbacks."
+      ],
+      "signoffs": [
+        "client-request-recovery"
+      ]
+    },
+    {
+      "id": "REL-35",
+      "name": "Master board and release verification workflow",
+      "status": "working",
+      "priority": "P0",
+      "column": "Done",
+      "scope": "checkpoint",
+      "verifiedScope": "35 system records validated; executable audit generates the single board; 13 release policy tests pass and prevent false release acceptance.",
+      "sources": [
+        "Docs/Release/systems.json",
+        "Tools/Release/audit-release.js",
+        "Tools/Release/Verify-Project.ps1"
+      ],
+      "checks": [
+        "release-policy"
+      ],
+      "dependsOn": [],
+      "blocker": "Full product acceptance is still blocked by the explicitly recorded system dependencies; the board workflow itself is locally verified.",
+      "nextAction": "Keep this board current after each implementation and import real native, packaged and acceptance evidence.",
+      "acceptance": "Every system has a status, priority, dependency, next action and acceptance evidence; the full release gate remains blocked until every system and required check is verified.",
+      "plan": [
+        "Use systems.json as the task record and MASTER_BOARD.md as its generated readable view.",
+        "Keep specialist character records linked from the board.",
+        "Limit active implementation to the highest-priority unresolved dependency and one bounded art task."
+      ],
+      "signoffs": [
+        "board-review"
+      ]
+    }
+  ]
+}

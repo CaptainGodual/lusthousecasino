@@ -1,0 +1,197 @@
+{
+  "rulesVersion": 1,
+  "approvedTargetRtp": 0.96,
+  "observedRtp": 0.9595956183333333,
+  "paidSpins": 30000000,
+  "totalStake": 6000000000,
+  "totalReturn": 5757573710,
+  "calibrationRuns": [
+    {
+      "paid": 5000000,
+      "steps": 7251633,
+      "stake": 1000000000,
+      "returned": 960545340,
+      "rtp": 0.96054534,
+      "free": 1667480,
+      "holds": 110120,
+      "mega": 21,
+      "hitRate": 0.2245610057762162,
+      "blocks": 4892,
+      "approx95CI": [
+        0.9563124632393207,
+        0.9647782167606793
+      ],
+      "config": {
+        "Version": 1,
+        "CrimsonGoal": 12,
+        "RoyalGoal": 16,
+        "MegaGoal": 24,
+        "FreeAward": 8,
+        "RoyalAward": 3,
+        "HeartProbability": 0.02664,
+        "CrimsonProbability": 0.025,
+        "RoyalProbability": 0.008,
+        "WildProbability": 0.035,
+        "FreeWildProbability": 0.095,
+        "RespinCoinProbability": 0.035,
+        "CollectorProbability": 0.01,
+        "Mini": 25,
+        "Major": 100,
+        "Mega": 1000
+      }
+    },
+    {
+      "paid": 5000000,
+      "steps": 7253387,
+      "stake": 1000000000,
+      "returned": 958884840,
+      "rtp": 0.95888484,
+      "free": 1668464,
+      "holds": 110143,
+      "mega": 15,
+      "hitRate": 0.22432058292215762,
+      "blocks": 4876,
+      "approx95CI": [
+        0.9547626522919749,
+        0.963007027708025
+      ],
+      "config": {
+        "Version": 1,
+        "CrimsonGoal": 12,
+        "RoyalGoal": 16,
+        "MegaGoal": 24,
+        "FreeAward": 8,
+        "RoyalAward": 3,
+        "HeartProbability": 0.02664,
+        "CrimsonProbability": 0.025,
+        "RoyalProbability": 0.008,
+        "WildProbability": 0.035,
+        "FreeWildProbability": 0.095,
+        "RespinCoinProbability": 0.035,
+        "CollectorProbability": 0.01,
+        "Mini": 25,
+        "Major": 100,
+        "Mega": 1000
+      }
+    },
+    {
+      "paid": 5000000,
+      "steps": 7252687,
+      "stake": 1000000000,
+      "returned": 959905250,
+      "rtp": 0.95990525,
+      "free": 1668456,
+      "holds": 110160,
+      "mega": 17,
+      "hitRate": 0.22457787024312506,
+      "blocks": 4882,
+      "approx95CI": [
+        0.9557473047859292,
+        0.9640631952140709
+      ],
+      "config": {
+        "Version": 1,
+        "CrimsonGoal": 12,
+        "RoyalGoal": 16,
+        "MegaGoal": 24,
+        "FreeAward": 8,
+        "RoyalAward": 3,
+        "HeartProbability": 0.02664,
+        "CrimsonProbability": 0.025,
+        "RoyalProbability": 0.008,
+        "WildProbability": 0.035,
+        "FreeWildProbability": 0.095,
+        "RespinCoinProbability": 0.035,
+        "CollectorProbability": 0.01,
+        "Mini": 25,
+        "Major": 100,
+        "Mega": 1000
+      }
+    },
+    {
+      "paid": 5000000,
+      "steps": 7251268,
+      "stake": 1000000000,
+      "returned": 957894850,
+      "rtp": 0.95789485,
+      "free": 1666720,
+      "holds": 110153,
+      "mega": 14,
+      "hitRate": 0.22453948743861074,
+      "blocks": 4873,
+      "approx95CI": [
+        0.9538450721893696,
+        0.9619446278106303
+      ],
+      "config": {
+        "Version": 1,
+        "CrimsonGoal": 12,
+        "RoyalGoal": 16,
+        "MegaGoal": 24,
+        "FreeAward": 8,
+        "RoyalAward": 3,
+        "HeartProbability": 0.02664,
+        "CrimsonProbability": 0.025,
+        "RoyalProbability": 0.008,
+        "WildProbability": 0.035,
+        "FreeWildProbability": 0.095,
+        "RespinCoinProbability": 0.035,
+        "CollectorProbability": 0.01,
+        "Mini": 25,
+        "Major": 100,
+        "Mega": 1000
+      }
+    }
+  ],
+  "independentHoldout": {
+    "paid": 10000000,
+    "steps": 14504793,
+    "stake": 2000000000,
+    "returned": 1920343430,
+    "rtp": 0.960171715,
+    "free": 3334160,
+    "holds": 220557,
+    "mega": 45,
+    "hitRate": 0.22449310376232187,
+    "blocks": 9775,
+    "approx95CI": [
+      0.95718790008899,
+      0.9631555299110099
+    ],
+    "volatility": {
+      "paidCycles": 10000000,
+      "paidCycleHitRate": 0.2305188,
+      "cycleReturnSD": 7.024205347438035,
+      "maxObservedReturnInTotalBets": 1144,
+      "buckets": [
+        7694812,
+        1641641,
+        393154,
+        107310,
+        156203,
+        6880
+      ]
+    },
+    "config": {
+      "Version": 1,
+      "CrimsonGoal": 12,
+      "RoyalGoal": 16,
+      "MegaGoal": 24,
+      "FreeAward": 8,
+      "RoyalAward": 3,
+      "HeartProbability": 0.02664,
+      "CrimsonProbability": 0.025,
+      "RoyalProbability": 0.008,
+      "WildProbability": 0.035,
+      "FreeWildProbability": 0.095,
+      "RespinCoinProbability": 0.035,
+      "CollectorProbability": 0.01,
+      "Mini": 25,
+      "Major": 100,
+      "Mega": 1000
+    }
+  },
+  "rulesSha256": "62b7d8312c2ab8a1640f997dbcb8682438181e4653e7f372764168a074b512c5",
+  "deployment": "Prepared locally; deployment not performed.",
+  "interpretation": "Monte Carlo estimates, not a mathematical RTP proof or certification. Features completed after the requested paid-spin count; stakes and returns include these tails. Confidence intervals use approximate block estimates. Volatility is measured per paid-funded cycle, including its subsequent free/hold steps. Pot progress is isolated by bet."
+}

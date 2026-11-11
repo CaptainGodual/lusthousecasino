@@ -1,0 +1,16 @@
+{
+  "reviewedOn": "2026-11-11",
+  "engine": {"major":5,"minor":8,"patch":4,"changelist":58902052,"source":"C:/Program Files/Epic Games/UE_5.8/Engine/Build/Build.version"},
+  "localSourceControl": {"headDeclaration":"refs/heads/master","resolvedCommit":null,"result":"git rev-parse --verify HEAD cannot resolve this checkout"},
+  "remoteRepository": {"repository":"CaptainGodual/lusthousecasino","observedBranch":"main","localCommitCorrespondence":"unverified"},
+  "publicUpdateManifest": {
+    "url":"https://github.com/CaptainGodual/lusthousecasino/blob/main/update.json",
+    "blobSha":"22549d885c3932a61eb0dd9f6a27d117c79d2fb7",
+    "version":"0.1.0",
+    "downloadUrl":"https://github.com/CaptainGodual/lusthousecasino/releases/latest",
+    "localApplicationVersion":"0.0.2",
+    "result":"version mismatch; no public mutation performed"
+  },
+  "baselineBuild": {"path":"Saved/ReleaseAudit/2026-11-11/editor-build-local.log","result":"Result: Succeeded","toolchain":"MSVC 14.51.36260 with Windows SDK 10.0.28000.0","note":"Retest after native source changes"},
+  "automationLaunch": {"exitCode":0,"reportProduced":false,"result":"blocked; exit alone is not evidence that tests ran"}
+}

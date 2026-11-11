@@ -1,0 +1,24 @@
+'use strict';
+const assert = require('node:assert/strict');
+const {validateCatalog, inspectAutomation, evaluate, CORE_CHECKS} = require('./release-policy');
+const now = Date.now(), checkedAt = new Date(now).toISOString(), fp = 'current-source';
+const system = {id:'REL-01',name:'Acceptance fixture',status:'working',priority:'P0',column:'Verify',scope:'checkpoint',verifiedScope:'fixture',blocker:'none',nextAction:'verify',acceptance:'current package',sources:['fixture'],checks:[],dependsOn:[],plan:['verify'],signoffs:['loop']};
+const catalog = {schemaVersion:1,systems:[system]};
+const checks = CORE_CHECKS.map(id => ({id,status:'passed',sourceFingerprint:fp,checkedAt,...(id === 'windows-package' ? {artifactFingerprint:'package'} : {})}));
+const manual = {sourceFingerprint:fp,records:[{id:'loop',status:'passed',tester:'test fixture',checkedAt,artifactFingerprint:'package',evidence:['verified.txt']}]};
+let passed = 0;
+function test(name, fn) {fn(); ++passed; console.log('PASS ' + name);}
+test('current source, package and actual acceptance can pass', () => assert(evaluate(catalog,checks,manual,fp,{now,evidenceExists:()=>true}).ready));
+test('zero editor exit with no report cannot count as test execution', () => assert.equal(inspectAutomation(null,[]).status,'blocked'));
+test('empty or missing expected automation tests fail closed', () => {assert.equal(inspectAutomation({tests:[]},[]).status,'blocked'); assert.equal(inspectAutomation({tests:[{fullTestPath:'A',state:'Success'}]},['B']).status,'failed');});
+test('failed and not-run tests cannot pass', () => {assert.equal(inspectAutomation({tests:[{fullTestPath:'A',state:'Fail'}]},['A']).status,'failed'); assert.equal(inspectAutomation({tests:[{fullTestPath:'A',state:'Success'}],notRun:1},['A']).status,'failed');});
+test('real expected successful test report passes', () => assert.equal(inspectAutomation({tests:[{fullTestPath:'A',state:'Success'}]},['A']).status,'passed'));
+test('missing checks or manual acceptance keep release blocked', () => {assert(!evaluate(catalog,[],manual,fp,{now}).ready); assert(!evaluate(catalog,checks,null,fp,{now}).ready);});
+test('changed source invalidates all previous evidence', () => assert(!evaluate(catalog,checks,manual,'new-source',{now}).ready));
+test('changed artifact invalidates manual acceptance', () => assert(!evaluate(catalog,checks,{...manual,records:[{...manual.records[0],artifactFingerprint:'old-package'}]},fp,{now}).ready));
+test('stale evidence and future timestamps cannot authorize release', () => {assert(!evaluate(catalog,checks,manual,fp,{now:now+25*3600000}).ready); assert(!evaluate(catalog,checks,manual,fp,{now:now-120000}).ready);});
+test('missing screenshot or log cannot become acceptance', () => assert(!evaluate(catalog,checks,manual,fp,{now,evidenceExists:()=>false}).ready));
+test('planned systems prevent full release despite green tests', () => assert(!evaluate({schemaVersion:1,systems:[{...system,status:'planned'}]},checks,manual,fp,{now}).ready));
+test('duplicate IDs and cyclic dependencies are rejected', () => {assert.throws(()=>validateCatalog({schemaVersion:1,systems:[system,system]}),/Duplicate/); assert.throws(()=>validateCatalog({schemaVersion:1,systems:[{...system,dependsOn:['REL-01']}]}),/Cyclic/);});
+test('unknown dependencies and invalid completed states are rejected', () => {assert.throws(()=>validateCatalog({schemaVersion:1,systems:[{...system,dependsOn:['REL-99']}]}),/Unknown/); assert.throws(()=>validateCatalog({schemaVersion:1,systems:[{...system,status:'blocked',column:'Done'}]}),/cannot be Done/);});
+console.log(passed + ' release readiness policy tests passed.');

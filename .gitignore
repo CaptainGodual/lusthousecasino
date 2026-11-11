@@ -1,0 +1,21 @@
+
+# Local temporary Android signing settings; never commit credentials.
+/Config/UserEngine.ini
+
+# Generated Unreal output and local verification evidence.
+/.vs/
+/Binaries/
+/DerivedDataCache/
+/Intermediate/
+/Saved/
+/DemoBuilds/
+/AndroidBuild/
+
+# Recreated solutions, Python caches, test stores and generated cook ordering.
+/*.sln
+/*.slnx
+/tmp*
+**/__pycache__/
+**/FileOpenOrder/
+/Backend/LustVend/tmp*/
+/Backend/LustVend/*.sqlite*
