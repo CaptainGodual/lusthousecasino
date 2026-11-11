@@ -37,5 +37,7 @@ Sugar Lust, Neon Nights, Candy Jar, free spins, progressives, missions, daily re
 
 PlayFab authenticates the player. Nakama owns online settlement and durable receipts. Local demo logic must not become a fallback for online currency. See [settlement deployment](Backend/SETTLEMENT_DEPLOYMENT.md), [Mega Pot deployment](Backend/MEGA_POT_ONLINE_DEPLOYMENT.md), and [LUSTVEND](Backend/LustVend/README.md).
 
-The local Git metadata did not resolve a commit during the review. Preserve `Saved/ReleaseAudit/2026-11-11/baseline-source-manifest.json` and the binary backups until a valid checkout is restored and compared. Do not initialize a new repository over unresolved metadata or reset player state to repair deployment problems.
+Local source control now resolves `main` at `6cf1c73f97bcc0771c3d7b93cc6231c0291e7458`, retaining the earlier root commit. Its first upload contains about 5.55 GiB of raw content and seven Unreal packages above GitHub's raw-file limit. A separate Git LFS history is prepared in smaller commits while preserving the original commit and working files. See [source upload recovery](Docs/Release/SOURCE_UPLOAD.md) for the upload command, resume behavior, and verification evidence.
+
+The source upload targets `origin/master`; the existing `origin/main` remains the updater distribution branch. After the first upload succeeds, fetch assets with Git LFS when cloning the source. Remote publication, a clean LFS clone, and a reproducible build remain required for REL-01 acceptance. Keep the preserved source manifest and binary backups until those checks pass.
 

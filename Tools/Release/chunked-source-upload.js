@@ -1,5 +1,5 @@
 'use strict';
-// Rebuild the unpublished root in an isolated repository. Never reset working files.
+// Split the unpublished source snapshot in isolation. Never reset working files.
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
@@ -45,6 +45,9 @@ function batchFiles(files, limit = 512 * MiB) {
 function pointer(oid, bytes) {
   return bytes === 0 ? '' : 'version https://git-lfs.github.com/spec/v1\noid sha256:' + oid + '\nsize ' + bytes + '\n';
 }
+function blobOid(contents) {
+  return crypto.createHash('sha1').update('blob '+Buffer.byteLength(contents)+'\0').update(contents).digest('hex');
+}
 function hashAsset(file, expected) {
   const before = fs.statSync(file), sha256 = crypto.createHash('sha256'), sha1 = crypto.createHash('sha1');
   sha1.update('blob ' + before.size + '\0');
@@ -82,10 +85,10 @@ function commit(root, gitDir, branch, parent, message) {
   git(root, ['update-ref','refs/heads/' + branch,sha,...(parent ? [parent] : ['0'.repeat(40)])], {gitDir});
   return sha;
 }
-function changedPaths(root) {
+function changedPaths(root, includeUntracked = true) {
   return [...new Set([
     ...git(root, ['diff','--name-only','--no-renames','-z','HEAD']).split('\0'),
-    ...git(root, ['ls-files','--others','--exclude-standard','-z']).split('\0')
+    ...(includeUntracked ? git(root, ['ls-files','--others','--exclude-standard','-z']).split('\0') : [])
   ].filter(Boolean))];
 }
 function prepare(root, output, options = {}) {
@@ -93,12 +96,17 @@ function prepare(root, output, options = {}) {
   if (fs.existsSync(path.join(output, 'plan.json'))) return verify(root, output);
   if (fs.existsSync(path.join(output, 'snapshot'))) throw Error('Partial preparation exists. Preserve it and use a new --prepared directory.');
   const original = git(root, ['rev-parse','--verify','HEAD']);
-  if (git(root, ['rev-list','--count',original]) !== '1') throw Error('This tool only splits the single unpublished root commit.');
-  const branch = git(root, ['symbolic-ref','--quiet','--short','HEAD']);
+  const originalHistory = git(root, ['rev-list',original]).split('\n');
+  const originalBranch = git(root, ['symbolic-ref','--quiet','--short','HEAD']);
+  const branch = options.branch || (originalBranch==='main' ? 'master' : originalBranch);
+  if (branch==='main') throw Error('The updater main branch must not be the source upload destination.');
+  git(root,['check-ref-format','refs/heads/'+branch]);
   const originalGitDir = git(root, ['rev-parse','--absolute-git-dir']);
+  const originalIndexFingerprint = crypto.createHash('sha256').update(git(root,['ls-files','--stage','-z'],{binary:true})).digest('hex');
   const maintenance = (options.maintenance || MAINTENANCE).filter(name => fs.existsSync(inside(root,path.join(root,name))));
-  const unexpected = changedPaths(root).filter(name => !maintenance.includes(name));
+  const unexpected = changedPaths(root,false).filter(name => !maintenance.includes(name));
   if (unexpected.length) throw Error('Unreviewed local changes must be preserved separately: ' + unexpected.slice(0,8).join(', '));
+  const untrackedPreserved = git(root,['ls-files','--others','--exclude-standard','-z']).split('\0').filter(name=>name&&!maintenance.includes(name));
   if (fs.existsSync(path.join(root, '.gitattributes'))) throw Error('Existing attributes require review; they will not be overwritten.');
   const originalFiles = tree(root, original);
   const assets = originalFiles.filter(f => LFS_PATTERN.test(f.path));
@@ -156,7 +164,8 @@ function prepare(root, output, options = {}) {
   if (git(root,['rev-parse','HEAD']) !== original) throw Error('Original HEAD changed during preparation; nothing was installed.');
   const plan = {
     schemaVersion:1,preparedAt:new Date().toISOString(),projectRoot:root,originalGitDir,
-    originalCommit:original,originalTree:git(root,['rev-parse',original+'^{tree}']),branch,remote,
+    originalCommit:original,originalTree:git(root,['rev-parse',original+'^{tree}']),
+    originalBranch,originalHistory,originalIndexFingerprint,branch,remote,untrackedPreserved,
     gitDirectory:'snapshot/.git',attributes:ATTRIBUTES,attributesOid,
     commits,finalCommit:parent,finalTree:git(root,['rev-parse',parent+'^{tree}'],{gitDir}),
     originalFiles,files,worktreeFiles,lfsFiles,maintenance,batchBytes:options.batchBytes||512*MiB,
@@ -206,7 +215,7 @@ function verify(root, output) {
       throw Error('Original committed content was not preserved: '+original.path);
     if (lfs && (lfs.oid!==original.oid || lfs.bytes!==original.bytes || f.mode!==original.mode))
       throw Error('Original asset provenance changed: '+original.path);
-    if (lfs && git(root,['cat-file','blob',f.oid],{gitDir,binary:true}).toString('utf8')!==pointer(lfs.sha256,lfs.bytes))
+    if (lfs && f.oid!==blobOid(pointer(lfs.sha256,lfs.bytes)))
       throw Error('Prepared LFS pointer differs from the verified asset: '+original.path);
   }
   const history = git(root,['rev-list','--reverse',plan.finalCommit],{gitDir}).split('\n');
@@ -218,12 +227,15 @@ function verify(root, output) {
   if (objects.split('\n').some(line=>{const [kind,size]=line.split(' ');return kind==='blob'&&Number(size)>100*MiB;}))
     throw Error('An oversized raw Git blob remains reachable.');
   verifyWorktree(root,plan);
-  git(root,['fsck','--connectivity-only','--no-dangling'],{gitDir});
-  git(root,['lfs','fsck','--objects','--pointers',plan.finalCommit],{gitDir});
+  const gitCheck=git(root,['fsck','--connectivity-only','--no-dangling'],{gitDir});
+  const lfsCheck=git(root,['lfs','fsck','--objects','--pointers',plan.finalCommit],{gitDir});
+  fs.writeFileSync(path.join(output,'git-fsck.log'),(gitCheck||'Git object connectivity verified.')+'\n');
+  fs.writeFileSync(path.join(output,'lfs-fsck.log'),lfsCheck+'\n');
   const result = {status:'verified-prepared',checkedAt:new Date().toISOString(),originalCommit:plan.originalCommit,
     finalCommit:plan.finalCommit,commits:plan.commits.length,files:plan.files.length,lfsFiles:plan.lfsFiles.length,
     assetBytes:plan.lfsFiles.reduce((n,f)=>n+f.bytes,0),largestBatchBytes:Math.max(...plan.commits.map(c=>c.bytes)),
-    originalSnapshotPreserved:true,remoteVerified:false,preparedDirectory:output};
+    originalSnapshotPreserved:true,remoteVerified:false,preparedDirectory:output,
+    evidence:['plan.json','git-fsck.log','lfs-fsck.log']};
   writeJson(path.join(output,'verification.json'),result);
   return result;
 }
@@ -233,6 +245,12 @@ function remoteHead(root, gitDir, branch) {
   const parts = result.split(/\s+/);
   if (parts.length!==2 || parts[1]!=='refs/heads/'+branch || !/^[a-f0-9]{40}$/.test(parts[0])) throw Error('Unexpected remote branch response.');
   return parts[0];
+}
+function resumeIndex(commits, remote) {
+  if (!remote) return -1;
+  const index = commits.findIndex(c=>c.sha===remote);
+  if (index<0) throw Error('Remote source branch contains other work. No force push will be performed.');
+  return index;
 }
 function live(root, gitDir, args, input) {
   const env = {...process.env};
@@ -246,8 +264,7 @@ function publish(root, output, options = {}) {
   const {plan,gitDir} = load(root,output);
   verify(root,output);
   if (git(root,['remote','get-url','origin'],{gitDir})!==plan.remote) throw Error('Prepared origin changed.');
-  const remote = remoteHead(root,gitDir,plan.branch), index = remote ? plan.commits.findIndex(c=>c.sha===remote) : -1;
-  if (remote && index<0) throw Error('Remote source branch contains other work. No force push will be performed.');
+  const remote = remoteHead(root,gitDir,plan.branch), index = resumeIndex(plan.commits,remote);
   for (const [number,c] of plan.commits.entries()) {
     if (number<=index) continue;
     console.log('Uploading commit '+(number+1)+'/'+plan.commits.length+': '+c.message+' ('+(c.bytes/MiB).toFixed(1)+' MiB payload)');
@@ -264,7 +281,7 @@ function install(root, output) {
   const {plan,gitDir} = load(root,output);
   verifyWorktree(root,plan);
   const current = git(root,['rev-parse','HEAD']), branch = git(root,['symbolic-ref','--quiet','--short','HEAD']);
-  if (branch!==plan.branch || ![plan.originalCommit,plan.finalCommit].includes(current))
+  if (![plan.originalBranch,plan.branch].includes(branch) || ![plan.originalCommit,plan.finalCommit].includes(current))
     throw Error('The active branch changed. Prepared history was not installed.');
   const published = readJson(path.join(output,'published.json'));
   if (!published.remoteVerified || published.commit!==plan.finalCommit || remoteHead(root,gitDir,plan.branch)!==plan.finalCommit)
@@ -273,8 +290,10 @@ function install(root, output) {
   if (path.resolve(activeDir).toLowerCase()!==path.resolve(plan.originalGitDir).toLowerCase()) throw Error('Active Git directory changed.');
   for (const lock of ['index.lock','HEAD.lock','refs/heads/'+branch+'.lock'])
     if (fs.existsSync(path.join(activeDir,lock))) throw Error('Another Git operation holds '+lock+'. Let it finish.');
-  const expectedChanges = new Set([...plan.maintenance,'.gitattributes']);
-  if (current===plan.originalCommit && changedPaths(root).some(p=>!expectedChanges.has(p))) throw Error('Additional local changes appeared; installation stopped.');
+  const expectedChanges = new Set([...plan.originalFiles.map(f=>f.path),...plan.maintenance,'.gitattributes']);
+  if (current===plan.originalCommit && changedPaths(root,false).some(p=>!expectedChanges.has(p))) throw Error('Additional tracked work appeared; installation stopped.');
+  const indexFingerprint=crypto.createHash('sha256').update(git(root,['ls-files','--stage','-z'],{binary:true})).digest('hex');
+  if (current===plan.originalCommit && indexFingerprint!==plan.originalIndexFingerprint) throw Error('Staged work changed since preparation; installation stopped.');
   git(root,['lfs','install','--local']);
   const backupRef = 'refs/heads/backup/pre-lfs-'+plan.originalCommit.slice(0,12);
   const prior = git(root,['rev-parse','--verify',backupRef],{allowFailure:true});
@@ -295,18 +314,24 @@ function install(root, output) {
   // Only metadata and the new attributes file change; no checkout or hard reset.
   const attributesPath = path.join(root,'.gitattributes');
   if (!fs.existsSync(attributesPath)) fs.writeFileSync(attributesPath,plan.attributes,{flag:'wx'});
-  if (current!==plan.finalCommit) git(root,['update-ref','-m','Install verified chunked LFS baseline','refs/heads/'+branch,plan.finalCommit,plan.originalCommit]);
+  const destinationRef='refs/heads/'+plan.branch;
+  if (branch!==plan.branch) {
+    const destination=git(root,['rev-parse','--verify',destinationRef],{allowFailure:true});
+    if (typeof destination==='string'&&destination!==plan.finalCommit) throw Error('The local source destination contains other work.');
+    if (typeof destination!=='string') git(root,['update-ref',destinationRef,plan.finalCommit,'0'.repeat(40)]);
+    git(root,['symbolic-ref','-m','Select verified LFS source baseline','HEAD',destinationRef]);
+  } else if (current!==plan.finalCommit) git(root,['update-ref','-m','Install verified chunked LFS baseline',destinationRef,plan.finalCommit,plan.originalCommit]);
   git(root,['read-tree',plan.finalCommit]);
-  git(root,['config','branch.'+branch+'.remote','origin']);
-  git(root,['config','branch.'+branch+'.merge','refs/heads/'+branch]);
-  git(root,['update-ref','refs/remotes/origin/'+branch,plan.finalCommit]);
+  git(root,['config','branch.'+plan.branch+'.remote','origin']);
+  git(root,['config','branch.'+plan.branch+'.merge','refs/heads/'+plan.branch]);
+  git(root,['update-ref','refs/remotes/origin/'+plan.branch,plan.finalCommit]);
   git(root,['lfs','fsck','--objects','--pointers','HEAD']);
   if (git(root,['diff','--name-only','HEAD'])) throw Error('Publication succeeded, but the installed checkout needs review. Original backup is preserved.');
-  const result = {status:'published-and-installed',checkedAt:new Date().toISOString(),branch,commit:plan.finalCommit,backupRef,originalCommit:plan.originalCommit,remoteVerified:true,workingFilesPreserved:true};
+  const result = {status:'published-and-installed',checkedAt:new Date().toISOString(),branch:plan.branch,commit:plan.finalCommit,backupRef,originalCommit:plan.originalCommit,remoteVerified:true,workingFilesPreserved:true};
   writeJson(path.join(output,'installed.json'),result);
   return result;
 }
-module.exports = {prepare,verify,publish,install,batchFiles,pointer,ATTRIBUTES,MAINTENANCE,LFS_PATTERN};
+module.exports = {prepare,verify,publish,install,batchFiles,pointer,resumeIndex,ATTRIBUTES,MAINTENANCE,LFS_PATTERN};
 if (require.main===module) {
   const args=process.argv.slice(2), option=key=>{const i=args.indexOf(key);return i<0?null:args[i+1];};
   const root=path.resolve(option('--project-root')||path.join(__dirname,'../..'));

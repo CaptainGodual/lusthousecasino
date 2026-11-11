@@ -1,6 +1,6 @@
 # Lust House Casino master release board
 
-Reviewed 2026-11-11T20:46:57.140Z. This is the single game implementation board. Edit systems.json and regenerate this view; keep Character Studio and Character Production as linked specialist records.
+Reviewed 2026-11-11T22:19:48.454Z. This is the single game implementation board. Edit systems.json and regenerate this view; keep Character Studio and Character Production as linked specialist records.
 
 **Full release: NOT READY. Focused checkpoint: NOT READY.**
 
@@ -10,7 +10,7 @@ Inventory: 35 systems; 4 working, 15 incomplete, 8 planned, 8 blocked. Working a
 
 - Project: SugarLustUE.uproject; Unreal 5.8; application 0.0.2.
 - Current runtime source fingerprint: 697dee2a39fc7f870a0474097ac555127de6443aaf68bb73a8dee3cb474b623e.
-- Source-control identity: Git cannot resolve this checkout; preserve the source manifest and restore valid revision metadata.
+- Source-control identity: Resolved source commit 6cf1c73f97bcc0771c3d7b93cc6231c0291e7458
 - Preserved pre-change manifest: [Saved/ReleaseAudit/2026-11-11/baseline-source-manifest.json](../../Saved/ReleaseAudit/2026-11-11/baseline-source-manifest.json).
 - Machine-readable current checks: [Saved/ReleaseAudit/current.json](../../Saved/ReleaseAudit/current.json).
 
@@ -26,7 +26,7 @@ Inventory: 35 systems; 4 working, 15 incomplete, 8 planned, 8 blocked. Working a
 | Check | Result | Evidence |
 | --- | --- | --- |
 | project-config | passed | Engine 5.8; configured versions 0.0.2, 0.0.2, 0.0.2, 0.0.2 [SugarLustUE.uproject](../../SugarLustUE.uproject) [Config/DefaultGame.ini](../../Config/DefaultGame.ini) [Config/DefaultEngine.ini](../../Config/DefaultEngine.ini) |
-| git-head | blocked | Git cannot resolve this checkout; preserve the source manifest and restore valid revision metadata. [Saved/ReleaseAudit/2026-11-11/baseline-source-manifest.json](../../Saved/ReleaseAudit/2026-11-11/baseline-source-manifest.json) |
+| git-head | passed | Resolved source commit 6cf1c73f97bcc0771c3d7b93cc6231c0291e7458 [Saved/ReleaseAudit/2026-11-11/baseline-source-manifest.json](../../Saved/ReleaseAudit/2026-11-11/baseline-source-manifest.json) |
 | runtime-bundle | passed | Runtime bundle verified. [Saved/ReleaseAudit/run-2026-11-11T20-26-06-179Z/runtime-bundle.log](../../Saved/ReleaseAudit/run-2026-11-11T20-26-06-179Z/runtime-bundle.log) |
 | settlement | passed | PASS new players use server defaults, never a supplied seed PASS frozen imports cannot be overwritten and migrated accounts cannot be reseeded 32 transactional economy integration tests passed. [Saved/ReleaseAudit/run-2026-11-11T20-26-06-179Z/settlement.log](../../Saved/ReleaseAudit/run-2026-11-11T20-26-06-179Z/settlement.log) |
 | free-spins | passed | PASS: already-settled PlayFab version-3 responses recover without another debit, credit or RPC. PASS: Neon Muse reel frequency, 3/4/5-reel payouts, Wild substitution and losing combinations. PASS: Neon rules-4 receipts recover under rules 5 without reroll, double pay or duplicate free-spin consumption. [Saved/ReleaseAudit/run-2026-11-11T20-26-06-179Z/free-spins.log](../../Saved/ReleaseAudit/run-2026-11-11T20-26-06-179Z/free-spins.log) |
@@ -45,7 +45,7 @@ An Editor process exiting with code zero without a nonempty test report remains 
 
 | ID | System | Status | Column | Priority | Scope | Next action |
 | --- | --- | --- | --- | --- | --- | --- |
-| [REL-01](#rel-01) | Project identity and source control | blocked | Ready | P0 | checkpoint | Restore a valid source-controlled checkout without discarding local work; compare the preserved source manifest and commit the approved baseline. |
+| [REL-01](#rel-01) | Project identity and source control | blocked | In Progress | P0 | checkpoint | Run Tools/Release/Publish-SourceChunks.ps1 in a normal project terminal to upload each prepared commit, resume from the remote head, and install the verified LFS baseline; then clone and rebuild. |
 | [REL-02](#rel-02) | Unreal native build | working | Verify | P0 | checkpoint | Use Verify-Project.ps1 to retain reproducible build evidence and execute the complete Editor automation report. |
 | [REL-03](#rel-03) | Windows packaged build and launch | blocked | Ready | P0 | checkpoint | Complete the checkpoint in an environment permitted to stage with the installed Unreal engine, then verify the exact packaged executable with fresh and returning accounts. |
 | [REL-04](#rel-04) | Guest login and profile persistence | incomplete | Ready | P0 | checkpoint | Verify login failure states, save permissions, returning identity, profile load, and restart with a dedicated account. |
@@ -96,21 +96,23 @@ Only one implementation task and one bounded character/art task should be In Pro
 
 ## REL-01
 
-**Project identity and source control** — blocked; P0; Ready.
+**Project identity and source control** — blocked; P0; In Progress.
 
-Evidence level: Descriptor and engine installation inspected; local commit cannot resolve.
+Evidence level: Local main now resolves to 6cf1c73f97bcc0771c3d7b93cc6231c0291e7458, containing 2,371 files across two local commits. Separate source-master upload tooling preserves both original commits and prepares an independently verified Git LFS history in smaller batches..
 
-Source evidence: [SugarLustUE.uproject](../../SugarLustUE.uproject), [Source/SugarLustUE.Target.cs](../../Source/SugarLustUE.Target.cs), [Docs/Release/observations.json](../../Docs/Release/observations.json).
+Source evidence: [SugarLustUE.uproject](../../SugarLustUE.uproject), [Source/SugarLustUE.Target.cs](../../Source/SugarLustUE.Target.cs), [Docs/Release/observations.json](../../Docs/Release/observations.json), [Docs/Release/SOURCE_UPLOAD.md](../../Docs/Release/SOURCE_UPLOAD.md), [Tools/Release/chunked-source-upload.js](../../Tools/Release/chunked-source-upload.js), [Tools/Release/chunked-source-upload.test.js](../../Tools/Release/chunked-source-upload.test.js).
 
 Dependencies: none.
 
-Current constraint: Local HEAD declares master, but Git cannot resolve this checkout. Remote updater repository uses main. A remote branch name is not the local source revision.
+Current constraint: The source snapshot contains about 5.55 GiB and seven raw Unreal packages above 100 MiB. The active .git is read-only to this session, local Git cannot resolve github.com, and the connected app reports no push permission. Remote publication, installation of source master, and a fresh LFS clone/build still need evidence.
 
-Next action: Restore a valid source-controlled checkout without discarding local work; compare the preserved source manifest and commit the approved baseline.
+Next action: Run Tools/Release/Publish-SourceChunks.ps1 in a normal project terminal to upload each prepared commit, resume from the remote head, and install the verified LFS baseline; then clone and rebuild.
 
-- [ ] Retain Saved/ReleaseAudit/2026-11-11/baseline-source-manifest.json and binary backups.
-- [ ] Resolve the missing Git references or use a separate restored checkout; do not initialize over the existing metadata.
-- [ ] Record the real source revision in the next checkpoint manifest.
+- [ ] Preserve original root 7d5c2fe525ad4dcc938842e8aab7c69e267d040c, latest input 6cf1c73f97bcc0771c3d7b93cc6231c0291e7458, and the earlier source/asset manifests.
+- [ ] Verify the prepared chunk history and official LFS integrity report; keep generated outputs and local saves excluded.
+- [ ] Publish one commit at a time to origin/master, retaining origin/main for updater distribution.
+- [ ] After verified publication, select local master with the prepared LFS history; retain original local main and backup/pre-lfs-6cf1c73f97bc.
+- [ ] Verify an independent LFS clone, reproduce the native build, and record the final remote commit in the release evidence.
 
 Acceptance: Project path, engine version, branch, exact commit, and source manifest agree; clean rebuild from a second checkout reproduces the candidate.
 

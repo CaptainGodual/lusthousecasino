@@ -1,16 +1,58 @@
 {
   "reviewedOn": "2026-11-11",
-  "engine": {"major":5,"minor":8,"patch":4,"changelist":58902052,"source":"C:/Program Files/Epic Games/UE_5.8/Engine/Build/Build.version"},
-  "localSourceControl": {"headDeclaration":"refs/heads/master","resolvedCommit":null,"result":"git rev-parse --verify HEAD cannot resolve this checkout"},
-  "remoteRepository": {"repository":"CaptainGodual/lusthousecasino","observedBranch":"main","localCommitCorrespondence":"unverified"},
-  "publicUpdateManifest": {
-    "url":"https://github.com/CaptainGodual/lusthousecasino/blob/main/update.json",
-    "blobSha":"22549d885c3932a61eb0dd9f6a27d117c79d2fb7",
-    "version":"0.1.0",
-    "downloadUrl":"https://github.com/CaptainGodual/lusthousecasino/releases/latest",
-    "localApplicationVersion":"0.0.2",
-    "result":"version mismatch; no public mutation performed"
+  "engine": {
+    "major": 5,
+    "minor": 8,
+    "patch": 4,
+    "changelist": 58902052,
+    "source": "C:/Program Files/Epic Games/UE_5.8/Engine/Build/Build.version"
   },
-  "baselineBuild": {"path":"Saved/ReleaseAudit/2026-11-11/editor-build-local.log","result":"Result: Succeeded","toolchain":"MSVC 14.51.36260 with Windows SDK 10.0.28000.0","note":"Retest after native source changes"},
-  "automationLaunch": {"exitCode":0,"reportProduced":false,"result":"blocked; exit alone is not evidence that tests ran"}
+  "localSourceControl": {
+    "headDeclaration": "refs/heads/main",
+    "resolvedCommit": "6cf1c73f97bcc0771c3d7b93cc6231c0291e7458",
+    "localCommitCount": 2,
+    "result": "Two valid local commits. The local branch was renamed to main during preparation. Neither original commit is replaced by preparation."
+  },
+  "remoteRepository": {
+    "repository": "CaptainGodual/lusthousecasino",
+    "observedBranch": "main",
+    "localCommitCorrespondence": "No source master was returned by the GitHub app; existing main contains updater metadata.",
+    "connectorCanPush": false,
+    "observedCommit": "36207bc30eb0460eefeade4df7176c455efe503a"
+  },
+  "publicUpdateManifest": {
+    "url": "https://github.com/CaptainGodual/lusthousecasino/blob/main/update.json",
+    "blobSha": "22549d885c3932a61eb0dd9f6a27d117c79d2fb7",
+    "version": "0.1.0",
+    "downloadUrl": "https://github.com/CaptainGodual/lusthousecasino/releases/latest",
+    "localApplicationVersion": "0.0.2",
+    "result": "version mismatch; no public mutation performed"
+  },
+  "baselineBuild": {
+    "path": "Saved/ReleaseAudit/2026-11-11/editor-build-local.log",
+    "result": "Result: Succeeded",
+    "toolchain": "MSVC 14.51.36260 with Windows SDK 10.0.28000.0",
+    "note": "Retest after native source changes"
+  },
+  "automationLaunch": {
+    "exitCode": 0,
+    "reportProduced": false,
+    "result": "blocked; exit alone is not evidence that tests ran"
+  },
+  "sourceUpload": {
+    "originalFiles": 2371,
+    "originalBytes": 5957415464,
+    "rawPackagesOver100MiB": 7,
+    "lfsFiles": 2068,
+    "preparedCommitCount": 14,
+    "sourceBranch": "master",
+    "updaterBranch": "main",
+    "preparedDirectory": "Saved/ReleaseAudit/REL01-2026-11-11/chunked-upload",
+    "publicationVerified": false,
+    "activeGitMetadataWritable": false,
+    "localGitNetworkResult": "Could not resolve host: github.com",
+    "originalBranch": "main",
+    "originalCommit": "6cf1c73f97bcc0771c3d7b93cc6231c0291e7458",
+    "untrackedUserScript": "script.bat is preserved locally. It uses commit-count chunks and force-pushes main; it does not resolve the oversized raw assets."
+  }
 }

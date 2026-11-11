@@ -15,26 +15,31 @@
       "name": "Project identity and source control",
       "status": "blocked",
       "priority": "P0",
-      "column": "Ready",
+      "column": "In Progress",
       "scope": "checkpoint",
-      "verifiedScope": "Descriptor and engine installation inspected; local commit cannot resolve",
+      "verifiedScope": "Local main now resolves to 6cf1c73f97bcc0771c3d7b93cc6231c0291e7458, containing 2,371 files across two local commits. Separate source-master upload tooling preserves both original commits and prepares an independently verified Git LFS history in smaller batches.",
       "sources": [
         "SugarLustUE.uproject",
         "Source/SugarLustUE.Target.cs",
-        "Docs/Release/observations.json"
+        "Docs/Release/observations.json",
+        "Docs/Release/SOURCE_UPLOAD.md",
+        "Tools/Release/chunked-source-upload.js",
+        "Tools/Release/chunked-source-upload.test.js"
       ],
       "checks": [
         "project-config",
         "git-head"
       ],
       "dependsOn": [],
-      "blocker": "Local HEAD declares master, but Git cannot resolve this checkout. Remote updater repository uses main. A remote branch name is not the local source revision.",
-      "nextAction": "Restore a valid source-controlled checkout without discarding local work; compare the preserved source manifest and commit the approved baseline.",
+      "blocker": "The source snapshot contains about 5.55 GiB and seven raw Unreal packages above 100 MiB. The active .git is read-only to this session, local Git cannot resolve github.com, and the connected app reports no push permission. Remote publication, installation of source master, and a fresh LFS clone/build still need evidence.",
+      "nextAction": "Run Tools/Release/Publish-SourceChunks.ps1 in a normal project terminal to upload each prepared commit, resume from the remote head, and install the verified LFS baseline; then clone and rebuild.",
       "acceptance": "Project path, engine version, branch, exact commit, and source manifest agree; clean rebuild from a second checkout reproduces the candidate.",
       "plan": [
-        "Retain Saved/ReleaseAudit/2026-11-11/baseline-source-manifest.json and binary backups.",
-        "Resolve the missing Git references or use a separate restored checkout; do not initialize over the existing metadata.",
-        "Record the real source revision in the next checkpoint manifest."
+        "Preserve original root 7d5c2fe525ad4dcc938842e8aab7c69e267d040c, latest input 6cf1c73f97bcc0771c3d7b93cc6231c0291e7458, and the earlier source/asset manifests.",
+        "Verify the prepared chunk history and official LFS integrity report; keep generated outputs and local saves excluded.",
+        "Publish one commit at a time to origin/master, retaining origin/main for updater distribution.",
+        "After verified publication, select local master with the prepared LFS history; retain original local main and backup/pre-lfs-6cf1c73f97bc.",
+        "Verify an independent LFS clone, reproduce the native build, and record the final remote commit in the release evidence."
       ],
       "signoffs": [
         "source-baseline"
