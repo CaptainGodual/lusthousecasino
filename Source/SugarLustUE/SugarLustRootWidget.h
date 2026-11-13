@@ -20,6 +20,9 @@ class FSugarLustSlotMachine;
 class FJsonObject;
 class UVerticalBox;
 class ULustVendWidget;
+class UHotStreakSubsystem;
+class UHotStreakWidget;
+class UHotStreakPresenter;
 
 UCLASS()
 class SUGARLUSTUE_API USugarLustRootWidget : public UUserWidget
@@ -48,6 +51,20 @@ protected:
     virtual void NativeDestruct() override;
     virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 private:
+    friend class FHotStreakClientTest;
+    UHotStreakSubsystem* GetHotStreak() const;
+    void BuildHotStreakEntry(bool bLobby);
+    void UpdateHotStreakPresentation();
+    bool IsHotStreakPresentationReady() const;
+    bool IsHotStreakPanelOpen() const;
+    void CloseHotStreak();
+    void OpenHotStreakPractice();
+    UFUNCTION() void HandleOpenHotStreak();
+    UPROPERTY(Transient) TObjectPtr<UHotStreakWidget> HotStreakPanel;
+    UPROPERTY(Transient) TObjectPtr<UHotStreakPresenter> PepperPresenter;
+    UPROPERTY(Transient) TObjectPtr<UTextBlock> HotStreakHud;
+    UPROPERTY(Transient) TObjectPtr<UTextBlock> HotStreakLobbyText;
+    bool bOpenHotStreakWhenReady = false;
     UPROPERTY(Transient) TObjectPtr<class UMegaLustPotWidget> MegaPotPreview;
     UFUNCTION() void HandleOpenMegaPot();
     UPROPERTY(Transient) TObjectPtr<UMegaLustPotWidget> MegaPotLive;

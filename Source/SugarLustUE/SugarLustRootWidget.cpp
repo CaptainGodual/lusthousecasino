@@ -1,4 +1,8 @@
 #include "SugarLustRootWidget.h"
+#include "CasinoAccountApi.h"
+#include "HotStreakSubsystem.h"
+#include "HotStreakWidget.h"
+#include "HotStreakPresenter.h"
 #include "MegaLustPotWidget.h"
 #include "SocialCasinoPrototype.h"
 #include "CasinoCabinetDisplay.h"
@@ -132,7 +136,7 @@ void USugarLustRootWidget::NativeTick(const FGeometry& MyGeometry, float InDelta
     Super::NativeTick(MyGeometry, InDeltaTime);
     if (CabinetControls && DesignCanvas)
     {
-        const bool bModal = IsProgressiveJackpotVisible() || (BonusCanvas && BonusCanvas->GetVisibility() == ESlateVisibility::Visible) ||
+        const bool bModal = IsHotStreakPanelOpen() || IsProgressiveJackpotVisible() || (BonusCanvas && BonusCanvas->GetVisibility() == ESlateVisibility::Visible) ||
             (BigWinCanvas && BigWinCanvas->GetVisibility() == ESlateVisibility::Visible);
         DesignCanvas->SetRenderScale(bModal ? FVector2D(1,1) : FVector2D(1.35,1.38));
         DesignCanvas->SetRenderTranslation(bModal ? FVector2D::ZeroVector : FVector2D(-337.5,-179.4));
@@ -243,6 +247,7 @@ void USugarLustRootWidget::NativeTick(const FGeometry& MyGeometry, float InDelta
             else ShowBigWinPresentation();
         }
         UpdateBigWinUI(InDeltaTime);
+        UpdateHotStreakPresentation();
         if (SlotNoticeSeconds > 0.0f)
         {
             SlotNoticeSeconds = FMath::Max(0.0f, SlotNoticeSeconds - InDeltaTime);
@@ -284,6 +289,7 @@ void USugarLustRootWidget::NativeTick(const FGeometry& MyGeometry, float InDelta
     {
         UpdateDailyBonusUI();
     }
+    UpdateHotStreakPresentation();
 }
 
 UWidget* USugarLustRootWidget::MakeText(const FString& Text, float Size, FLinearColor Color, bool bBold, EHorizontalAlignment HAlign)
@@ -610,7 +616,7 @@ void USugarLustRootWidget::BuildLobby()
         Place(Button, X * 1920.f / 1672.f, Y * 1080.f / 941.f, W * 1920.f / 1672.f, H * 1080.f / 941.f, 5);
         return Button;
     };
-    Hit(TEXT("MenuEvent"), TEXT("Spin Duel - Enchanted Grove practice"), 500, 195, 1010, 315)->OnClicked.AddDynamic(this, &USugarLustRootWidget::HandleMenuEvent);
+    Hit(TEXT("MenuEvent"), TEXT("Hot Streak with Pepper and Spin Duel practice"), 500, 195, 1010, 315)->OnClicked.AddDynamic(this, &USugarLustRootWidget::HandleMenuEvent);
     Hit(TEXT("MenuInbox"), TEXT("Inbox"), 550, 538, 235, 180)->OnClicked.AddDynamic(this, &USugarLustRootWidget::HandleInboxButton);
     Hit(TEXT("MenuDailyRewards"), TEXT("Collect daily rewards"), 800, 538, 238, 180)->OnClicked.AddDynamic(this, &USugarLustRootWidget::HandleOpenDailyBonus);
     Hit(TEXT("MenuFriends"), TEXT("Friends"), 1052, 538, 231, 180)->OnClicked.AddDynamic(this, &USugarLustRootWidget::HandleMenuFriends);
@@ -628,6 +634,7 @@ void USugarLustRootWidget::BuildLobby()
     BuildSettingsModal();
     BuildMissionsModal();
     UpdateDailyBonusUI();
+    BuildHotStreakEntry(true);
 }
 
 void USugarLustRootWidget::HandleMenuFriends()
@@ -636,8 +643,7 @@ void USugarLustRootWidget::HandleMenuFriends()
 }
 void USugarLustRootWidget::HandleMenuEvent()
 {
-    HandleEnterSocialRoom();
-    if(SocialRoom) SocialRoom->QueueSpinDuelEntry();
+    HandleOpenHotStreak();
 }
 
 void USugarLustRootWidget::ShowLobbyHostGreeting()
@@ -951,6 +957,7 @@ void USugarLustRootWidget::BuildNeonNightsPreview()
     Place(Back, 22, 24, 126, 56, 10);
 
     UpdateNeonNightsUI();
+    BuildHotStreakEntry(false);
 }
 void USugarLustRootWidget::ShowNeonNightsPreview()
 {
@@ -1035,7 +1042,7 @@ void USugarLustRootWidget::UpdateNeonNights(float DeltaSeconds)
             bNeonPayoutAnimating = false;
             StopPayoutWinTune();
             if (bNeonHeatBonusActive) NeonHeatBonusDelaySeconds = 0.9f;
-            else if (NeonAutoSpinsRemaining > 0) RequestNeonNightsSpin();
+            else if (NeonAutoSpinsRemaining > 0) { UpdateHotStreakPresentation(); RequestNeonNightsSpin(); }
         }
     }
 
@@ -1365,7 +1372,7 @@ void USugarLustRootWidget::HandleNeonAutoSpin()
 }
 void USugarLustRootWidget::RequestNeonNightsSpin()
 {
-    if (IsProgressiveJackpotVisible() || !bShowingNeonNightsPreview || !bPlayFabProfileReady || bPlayFabRequestInFlight || bNeonSpinAnimating || bNeonPayoutAnimating || bNeonHeatBonusComplete) return;
+    if (IsHotStreakPanelOpen() || (bOpenHotStreakWhenReady && !bNeonHeatBonusActive) || IsProgressiveJackpotVisible() || !bShowingNeonNightsPreview || !bPlayFabProfileReady || bPlayFabRequestInFlight || bNeonSpinAnimating || bNeonPayoutAnimating || bNeonHeatBonusComplete) return;
     const int64 TotalBet = static_cast<int64>(NeonBet) * 5;
     if (!bNeonHeatBonusActive && NeonFreeSpins.Remaining == 0 && NeonCoins < TotalBet)
     {
@@ -1390,6 +1397,7 @@ void USugarLustRootWidget::RequestNeonNightsSpin()
     StopPayoutWinTune();
     StartSpinMusic();
     bPlayFabRequestInFlight = true;
+    if (auto* Event = GetHotStreak()) Event->SetResultPending();
     if (NeonAutoSpinsRemaining > 0) --NeonAutoSpinsRemaining;
     bNeonSpinAnimating = true;
     bNeonResultReady = false;
@@ -1427,6 +1435,7 @@ void USugarLustRootWidget::RequestNeonNightsSpin()
                 return;
             }
 
+            if (auto* Event = WeakThis->GetHotStreak()) Event->ApplySettledSpin(Result, SpinId);
             WeakThis->NeonTargetGrid.Reset();
             for (const TSharedPtr<FJsonValue>& Cell : *GridJson)
                 WeakThis->NeonTargetGrid.Add(Cell.IsValid() ? FMath::Clamp(static_cast<int32>(Cell->AsNumber()), 0, 18) : 0);
@@ -1500,6 +1509,10 @@ void USugarLustRootWidget::HandleContinueToLobby()
 
 void USugarLustRootWidget::StartPlayFabLogin()
 {
+    if (auto* Event = GetHotStreak())
+    {
+        if (Event->RestoreSession(PlayFabPlayerId, PlayFabSessionTicket)) { RequestPlayFabProfile(); Event->Refresh(); return; }
+    }
     if (bPlayFabLoginStarted) return;
     bPlayFabLoginStarted = true;
 
@@ -1606,6 +1619,7 @@ void USugarLustRootWidget::StartPlayFabLogin()
             WeakThis->UpdatePlayerProfileUI();
             UE_LOG(LogTemp, Log, TEXT("PlayFab login successful. Player ID: %s. Account created: %s"),
                 *WeakThis->PlayFabPlayerId, bNewAccount ? TEXT("yes") : TEXT("no"));
+            if (auto* Event = WeakThis->GetHotStreak()) Event->SetAccount(WeakThis->PlayFabPlayerId, WeakThis->PlayFabSessionTicket);
             WeakThis->RequestPlayFabProfile();
         });
 
@@ -1638,6 +1652,7 @@ void USugarLustRootWidget::RequestPlayFabProfile()
             }
 
             WeakThis->SlotGame->ApplyCloudProfile(static_cast<int64>(CoinsValue), static_cast<int64>(XPValue), ClaimDate, static_cast<int32>(StreakValue));
+            if (auto* Event = WeakThis->GetHotStreak()) Event->ApplyProfile(Profile);
             const TSharedPtr<FJsonObject>* NeonBonus = nullptr;
             WeakThis->ApplyNeonHeatBonusState(Profile->TryGetObjectField(TEXT("NeonHeatBonus"), NeonBonus) && NeonBonus ? *NeonBonus : nullptr);
             WeakThis->ApplyJackpotData(Profile);
@@ -1715,12 +1730,7 @@ void USugarLustRootWidget::RequestPlayFabJackpots()
 bool USugarLustRootWidget::ShouldRetrySpinRequest(const FString& FunctionName, const FString& SpinId,
     int32 Attempt, int32 HttpCode, const FString& CloudError, bool bConnected)
 {
-    // Only spin operations carry the end-to-end receipt protection required for
-    // automatic retry. Never retry validation, rules or Javascript exceptions.
-    return Attempt >= 0 && Attempt < 2 && !SpinId.IsEmpty() &&
-        (FunctionName == TEXT("Spin") || FunctionName == TEXT("NeonNightsSpin") || FunctionName == TEXT("MegaLustPotSpin")) &&
-        (!bConnected || HttpCode == 408 || HttpCode == 429 || (HttpCode >= 500 && HttpCode <= 599) ||
-            CloudError == TEXT("CloudScriptHTTPRequestError"));
+    return FCasinoAccountApi::ShouldRetry(FunctionName, SpinId, Attempt, HttpCode, CloudError, bConnected);
 }
 
 bool USugarLustRootWidget::PreparePendingSpin(FString& SpinId, TSharedPtr<FJsonObject>& Pending,
@@ -1747,119 +1757,24 @@ void USugarLustRootWidget::ExecutePlayFabCloudScript(const FString& FunctionName
 void USugarLustRootWidget::ExecutePlayFabCloudScriptAttempt(const FString& FunctionName, const TSharedRef<FJsonObject>& Parameters,
     TFunction<void(TSharedPtr<FJsonObject>)> OnSuccess, TFunction<void(const FString&)> OnFailure, int32 Attempt)
 {
-    if (PlayFabSessionTicket.IsEmpty())
-    {
-        OnFailure(TEXT("PlayFab login session ticket is missing."));
-        return;
-    }
-
-    FString TitleId;
-    GConfig->GetString(TEXT("SugarLust.PlayFab"), TEXT("TitleId"), TitleId, GGameIni);
-    TitleId.TrimStartAndEndInline();
-    if (TitleId.IsEmpty())
-    {
-        OnFailure(TEXT("PlayFab TitleId is missing from DefaultGame.ini."));
-        return;
-    }
-
-    TSharedRef<FJsonObject> BodyObject = MakeShared<FJsonObject>();
-    BodyObject->SetStringField(TEXT("FunctionName"), FunctionName);
-    BodyObject->SetObjectField(TEXT("FunctionParameter"), Parameters);
-    BodyObject->SetBoolField(TEXT("GeneratePlayStreamEvent"), true);
-    BodyObject->SetStringField(TEXT("RevisionSelection"), TEXT("Live"));
-
-    FString Body;
-    const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Body);
-    if (!FJsonSerializer::Serialize(BodyObject, Writer))
-    {
-        OnFailure(TEXT("Could not create the CloudScript request."));
-        return;
-    }
-
     const TWeakObjectPtr<USugarLustRootWidget> WeakThis(this);
-    TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
-    Request->SetURL(FString::Printf(TEXT("https://%s.playfabapi.com/Client/ExecuteCloudScript"), *TitleId));
-    Request->SetVerb(TEXT("POST"));
-    Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
-    Request->SetHeader(TEXT("X-Authorization"), PlayFabSessionTicket);
-    Request->SetContentAsString(Body);
-    Request->SetTimeout(20.0f);
-    TSharedRef<TFunction<void(TSharedPtr<FJsonObject>)>> SuccessCallback = MakeShared<TFunction<void(TSharedPtr<FJsonObject>)>>(MoveTemp(OnSuccess));
-    TSharedRef<TFunction<void(const FString&)>> FailureCallback = MakeShared<TFunction<void(const FString&)>>(MoveTemp(OnFailure));
-    Request->OnProcessRequestComplete().BindLambda(
-        [WeakThis, SuccessCallback, FailureCallback, FunctionName, Parameters, Attempt](FHttpRequestPtr CompletedRequest, FHttpResponsePtr Response, bool bConnectedSuccessfully)
+    const FString Ticket = PlayFabSessionTicket;
+    const TWeakObjectPtr<UHotStreakSubsystem> Event(GetHotStreak());
+    const bool bHadEvent = Event.IsValid();
+    const uint64 Generation = bHadEvent ? Event->GetLoginGeneration() : 0;
+    FCasinoAccountApi::Execute(this, Ticket, FunctionName, Parameters, MoveTemp(OnSuccess), MoveTemp(OnFailure),
+        [WeakThis, Ticket, Event, bHadEvent, Generation]()
+        { return WeakThis.IsValid() && WeakThis->PlayFabSessionTicket == Ticket && (!bHadEvent || (Event.IsValid() && Event->MatchesSession(Generation, Ticket))); },
+        [WeakThis, FunctionName](bool bRetrying)
         {
-            if (!WeakThis.IsValid()) return;
-            auto Retry = [WeakThis, SuccessCallback, FailureCallback, FunctionName, Parameters, Attempt](int32 HttpCode, const FString& CloudError, bool bConnected)
-            {
-                FString SpinId;
-                Parameters->TryGetStringField(TEXT("SpinId"), SpinId);
-                if (!ShouldRetrySpinRequest(FunctionName, SpinId, Attempt, HttpCode, CloudError, bConnected) || !WeakThis->GetWorld()) return false;
-                WeakThis->bSpinRequestRetrying = true;
-                const float Delay = Attempt == 0 ? 0.75f : 1.5f;
-                UE_LOG(LogTemp, Warning, TEXT("%s transient failure (HTTP %d, %s); retry %d/2 retains the original spin receipt."),
-                    *FunctionName, HttpCode, *CloudError, Attempt + 1);
-                FTimerHandle RetryTimer;
-                WeakThis->GetWorld()->GetTimerManager().SetTimer(RetryTimer, FTimerDelegate::CreateLambda(
-                    [WeakThis, SuccessCallback, FailureCallback, FunctionName, Parameters, Attempt]()
-                    {
-                        if (WeakThis.IsValid())
-                            WeakThis->ExecutePlayFabCloudScriptAttempt(FunctionName, Parameters, *SuccessCallback, *FailureCallback, Attempt + 1);
-                    }), Delay, false);
-                return true;
-            };
-            if (FunctionName == TEXT("Spin") || FunctionName == TEXT("NeonNightsSpin") || FunctionName == TEXT("MegaLustPotSpin")) WeakThis->bSpinRequestRetrying = false;
-            if (!bConnectedSuccessfully || !Response.IsValid())
-            {
-                if (Retry(0, TEXT(""), false)) return;
-                (*FailureCallback)(TEXT("Could not reach PlayFab. Your pending spin can be retried."));
-                return;
-            }
-
-            if (Retry(Response->GetResponseCode(), TEXT(""), true)) return;
-            TSharedPtr<FJsonObject> ResponseJson;
-            const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
-            if (!FJsonSerializer::Deserialize(Reader, ResponseJson) || !ResponseJson.IsValid())
-            {
-                (*FailureCallback)(FString::Printf(TEXT("PlayFab returned unreadable data (HTTP %d)."), Response->GetResponseCode()));
-                return;
-            }
-
-            const TSharedPtr<FJsonObject>* Data = nullptr;
-            if (!ResponseJson->TryGetObjectField(TEXT("data"), Data) || !Data || !Data->IsValid())
-            {
-                FString ErrorMessage;
-                ResponseJson->TryGetStringField(TEXT("errorMessage"), ErrorMessage);
-                (*FailureCallback)(ErrorMessage.IsEmpty() ? FString::Printf(TEXT("PlayFab request failed (HTTP %d)."), Response->GetResponseCode()) : ErrorMessage);
-                return;
-            }
-
-            const TSharedPtr<FJsonObject>* CloudError = nullptr;
-            if ((*Data)->TryGetObjectField(TEXT("Error"), CloudError) && CloudError && CloudError->IsValid())
-            {
-                FString ErrorName, ErrorMessage;
-                (*CloudError)->TryGetStringField(TEXT("Error"), ErrorName);
-                (*CloudError)->TryGetStringField(TEXT("Message"), ErrorMessage);
-                if (Retry(Response->GetResponseCode(), ErrorName, true)) return;
-                (*FailureCallback)(FString::Printf(TEXT("%s: %s"), *ErrorName, *ErrorMessage));
-                return;
-            }
-
-            const TSharedPtr<FJsonObject>* Result = nullptr;
-            if (!(*Data)->TryGetObjectField(TEXT("FunctionResult"), Result) || !Result || !Result->IsValid())
-            {
-                (*FailureCallback)(TEXT("CloudScript returned no result."));
-                return;
-            }
-            (*SuccessCallback)(*Result);
-        });
-
-    if (!Request->ProcessRequest()) (*FailureCallback)(TEXT("PlayFab request could not be started."));
+            if (WeakThis.IsValid() && (FunctionName == TEXT("Spin") || FunctionName == TEXT("NeonNightsSpin") || FunctionName == TEXT("MegaLustPotSpin")))
+                WeakThis->bSpinRequestRetrying = bRetrying;
+        }, Attempt);
 }
 
 void USugarLustRootWidget::RequestPlayFabSpin()
 {
-    if (IsProgressiveJackpotVisible() || !SlotGame || !bPlayFabProfileReady || bPlayFabRequestInFlight || !SlotGame->CanSpin()) return;
+    if (IsHotStreakPanelOpen() || bOpenHotStreakWhenReady || IsProgressiveJackpotVisible() || !SlotGame || !bPlayFabProfileReady || bPlayFabRequestInFlight || !SlotGame->CanSpin()) return;
     SugarSpinError.Reset();
     SugarFreeSpins.bPaused = false;
     PendingSugarJackpotPrize = 0; PendingSugarJackpotTier.Reset();
@@ -1873,6 +1788,7 @@ void USugarLustRootWidget::RequestPlayFabSpin()
         return;
     }
     bPlayFabRequestInFlight = true;
+    if (auto* Event = GetHotStreak()) Event->SetResultPending();
     const FString SpinId = PendingPlayFabSpinId;
     const TSharedRef<FJsonObject> Parameters = PendingSugarSpinParameters.ToSharedRef();
     const TWeakObjectPtr<USugarLustRootWidget> WeakThis(this);
@@ -1915,6 +1831,7 @@ void USugarLustRootWidget::RequestPlayFabSpin()
                 return;
             }
 
+            if (auto* Event = WeakThis->GetHotStreak()) Event->ApplySettledSpin(Result, SpinId);
             TArray<int32> Stops;
             for (const TSharedPtr<FJsonValue>& Stop : *StopsJson) Stops.Add(Stop.IsValid() ? static_cast<int32>(Stop->AsNumber()) : -1);
             const int32 ScatterCount = static_cast<int32>(ScatterValue);
@@ -2543,7 +2460,7 @@ void USugarLustRootWidget::HandleMissionsButton() { HandleOpenMissions(); }
 void USugarLustRootWidget::HandleLobbyHomeButton() { ShowSlotNotice(TEXT("YOU'RE ON THE LOBBY HOME SCREEN.")); }
 void USugarLustRootWidget::HandleJackpotsButton() { ShowSlotNotice(TEXT("PROGRESSIVE JACKPOT METERS ARE SHOWN ABOVE THE GAME CARDS.")); }
 void USugarLustRootWidget::HandleTournamentsButton() { ShowSlotNotice(TEXT("TOURNAMENTS ARE COMING SOON.")); }
-void USugarLustRootWidget::HandleEventsButton() { ShowSlotNotice(TEXT("EVENTS ARE COMING SOON.")); }
+void USugarLustRootWidget::HandleEventsButton() { HandleOpenHotStreak(); }
 void USugarLustRootWidget::HandleInboxButton() { ShowSlotNotice(TEXT("YOUR INBOX IS EMPTY FOR NOW.")); }
 void USugarLustRootWidget::HandleVipButton() { ShowSlotNotice(TEXT("VIP REWARDS ARE COMING SOON.")); }
 void USugarLustRootWidget::HandleComingSoonCard() { ShowSlotNotice(TEXT("THIS GAME IS COMING SOON. SUGAR LUST IS AVAILABLE TO PLAY.")); }
@@ -3142,6 +3059,7 @@ void USugarLustRootWidget::BuildSlot()
     BigWinCoinsSlot->SetSize(FVector2D(810.0f, 46.0f));
 
     UpdateReelWidgets(); UpdateSlotUI(); UpdateBonusUI();
+    BuildHotStreakEntry(false);
 }
 
 void USugarLustRootWidget::ShowBigWinPresentation()
@@ -3378,6 +3296,11 @@ void USugarLustRootWidget::UpdateReelWidgets()
     const UTexture2D* Wild=LoadArt(TEXT("/Game/Art/wild.wild")); const UTexture2D* Scatter=LoadArt(TEXT("/Game/Art/scatter.scatter")); const UTexture2D* Chocolate=LoadArt(TEXT("/Game/Art/chocolate.chocolate")); const UTexture2D* Cupcake=LoadArt(TEXT("/Game/Art/cupcake.cupcake")); const UTexture2D* Cupcake2=LoadArt(TEXT("/Game/Art/cupcake2.cupcake2")); const UTexture2D* LollipopGirl=LoadArt(TEXT("/Game/Art/lollipop.lollipop")); const UTexture2D* LollipopCandy=LoadArt(TEXT("/Game/Art/lollipop_candy.lollipop_candy")); const UTexture2D* GummyBear=LoadArt(TEXT("/Game/Art/gummybear.gummybear")); const UTexture2D* GrapeSheet=LoadArt(TEXT("/Game/Art/grape_spritesheet.grape_spritesheet"));
     const UTexture2D* Cherry=LoadArt(TEXT("/Game/Art/cherry.cherry")); const UTexture2D* CandyCane=LoadArt(TEXT("/Game/Art/candycane.candycane")); const UTexture2D* Macaron=LoadArt(TEXT("/Game/Art/macron.macron"));
     const UTexture2D* Ten=LoadArt(TEXT("/Game/Art/candy_10.candy_10")); const UTexture2D* Jack=LoadArt(TEXT("/Game/Art/candy_j.candy_j")); const UTexture2D* Queen=LoadArt(TEXT("/Game/Art/candy_q.candy_q")); const UTexture2D* King=LoadArt(TEXT("/Game/Art/candy_k.candy_k")); const UTexture2D* Ace=LoadArt(TEXT("/Game/Art/candy_a.candy_a"));
+    UTexture2D* FreeSpinsTexture = LoadArt(TEXT("/Game/Art/SugarLustSymbols/sugar-symbol-free-spins.sugar-symbol-free-spins"));
+    UTexture2D* MiniSymbolTexture = LoadArt(TEXT("/Game/Art/SugarLustSymbols/sugar-symbol-mini.sugar-symbol-mini"));
+    UTexture2D* MinorSymbolTexture = LoadArt(TEXT("/Game/Art/SugarLustSymbols/sugar-symbol-minor.sugar-symbol-minor"));
+    UTexture2D* MajorSymbolTexture = LoadArt(TEXT("/Game/Art/SugarLustSymbols/sugar-symbol-major.sugar-symbol-major"));
+    UTexture2D* GrandSymbolTexture = LoadArt(TEXT("/Game/Art/SugarLustSymbols/sugar-symbol-grand.sugar-symbol-grand"));
     for(int32 Reel=0;Reel<FSugarLustSlotMachine::ReelCount;++Reel)
     {
         const float Fraction=SlotGame->GetReelScrollFraction(Reel);
@@ -3407,7 +3330,12 @@ void USugarLustRootWidget::UpdateReelWidgets()
                     Symbol == ESugarLustSymbol::Jack ? const_cast<UTexture2D*>(Jack) :
                     Symbol == ESugarLustSymbol::Queen ? const_cast<UTexture2D*>(Queen) :
                     Symbol == ESugarLustSymbol::King ? const_cast<UTexture2D*>(King) :
-                    Symbol == ESugarLustSymbol::Ace ? const_cast<UTexture2D*>(Ace) : nullptr;
+                    Symbol == ESugarLustSymbol::Ace ? const_cast<UTexture2D*>(Ace) :
+                    Symbol == ESugarLustSymbol::FreeSpins ? FreeSpinsTexture :
+                    Symbol == ESugarLustSymbol::JackpotMini ? MiniSymbolTexture :
+                    Symbol == ESugarLustSymbol::JackpotMinor ? MinorSymbolTexture :
+                    Symbol == ESugarLustSymbol::JackpotMajor ? MajorSymbolTexture :
+                    Symbol == ESugarLustSymbol::JackpotGrand ? GrandSymbolTexture : nullptr;
                 if (Texture)
                 {
                     ReelArt[Index]->SetBrushFromTexture(Texture, true);
@@ -4007,6 +3935,9 @@ void USugarLustRootWidget::HandleExit3DLounge() { BuildLobby(); }
 
 void USugarLustRootWidget::ClearScreenWidgets()
 {
+    if (HotStreakPanel) HotStreakPanel->BindEvent(nullptr);
+    HotStreakPanel = nullptr; PepperPresenter = nullptr; HotStreakHud = nullptr; HotStreakLobbyText = nullptr;
+    bOpenHotStreakWhenReady = false;
     // Invalidate every screen-owned observer before releasing the canvas children.
     // Network callbacks continue updating account data while the lounge is visible.
     GemEarningProgressText = nullptr;

@@ -29,6 +29,8 @@ $reviewOutput = Join-Path $PWD 'Saved/ReleaseAudit/native-current'
 node Tools/Release/audit-release.js --reuse-checks --unreal-evidence Saved/ReleaseAudit/native-current
 ```
 
+For REL-02, run `.\Tools\Release\Verify-NativeRelease.ps1` from a normal project PowerShell terminal. It checks Editor and Shipping targets, requires a fresh report covering every project automation test, and refreshes the board. It locates Node automatically. See [native verification and current startup blocker](Docs/Release/NATIVE_VERIFICATION.md) for exact toolchain evidence and the remaining normal-terminal check.
+
 The wrapper keeps caches and logs in the project and preserves existing release packages by archiving a new Windows checkpoint. It never treats an Editor exit code of zero without a nonempty automation report as a passing test run. A packaged build still requires interactive, account, restart, performance and service acceptance against that exact artifact. Fill `Saved/ReleaseAudit/acceptance.json` from the generated template only with actual test evidence.
 
 ## Implemented paths and outstanding work
@@ -37,7 +39,6 @@ Sugar Lust, Neon Nights, Candy Jar, free spins, progressives, missions, daily re
 
 PlayFab authenticates the player. Nakama owns online settlement and durable receipts. Local demo logic must not become a fallback for online currency. See [settlement deployment](Backend/SETTLEMENT_DEPLOYMENT.md), [Mega Pot deployment](Backend/MEGA_POT_ONLINE_DEPLOYMENT.md), and [LUSTVEND](Backend/LustVend/README.md).
 
-Local source control now resolves `main` at `6cf1c73f97bcc0771c3d7b93cc6231c0291e7458`, retaining the earlier root commit. Its first upload contains about 5.55 GiB of raw content and seven Unreal packages above GitHub's raw-file limit. A separate Git LFS history is prepared in smaller commits while preserving the original commit and working files. See [source upload recovery](Docs/Release/SOURCE_UPLOAD.md) for the upload command, resume behavior, and verification evidence.
+The initial source upload is complete. Local `master` tracks `origin/master` at `aa4b4c970d1c2156f3e2ca3b6d7f5c87a501d724`: 14 commits, 2,374 tracked paths, and 2,068 LFS asset objects. Publication and local installation were verified; original source commits remain on `backup/pre-lfs-6cf1c73f97bc`. See [source upload recovery](Docs/Release/SOURCE_UPLOAD.md) for the retained procedure and evidence.
 
-The source upload targets `origin/master`; the existing `origin/main` remains the updater distribution branch. After the first upload succeeds, fetch assets with Git LFS when cloning the source. Remote publication, a clean LFS clone, and a reproducible build remain required for REL-01 acceptance. Keep the preserved source manifest and binary backups until those checks pass.
-
+`origin/main` remains the updater distribution branch. Use Git LFS when cloning the game source from `master`. A fresh independent source clone and reproducible native build remain required for REL-01 acceptance. Keep the preserved source manifest and binary backups until those checks pass.

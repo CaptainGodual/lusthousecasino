@@ -66,7 +66,8 @@ function callEconomy(action, args) {
     var fields = {
         Spin:["SpinId","BetPerLine","ActiveLines"], NeonNightsSpin:["SpinId","Bet"],MegaLustPotSpin:["SpinId","Bet","ExpectedRevision"],MegaLustPotState:[],
         ClaimMissionReward:["ClaimId","MissionId"], PickBonusCard:["Card"],
-        ClaimDailyBonus:[], GetOrMigratePlayerProfile:[]
+        ClaimDailyBonus:[], GetOrMigratePlayerProfile:[], GetHotStreakState:[],
+        ClaimHotStreakReward:["ClaimId","EventId","TierId"], EquipCasinoCosmetic:["EquipId","RewardId","Slot"]
     }[action];
     for (var i = 0; i < fields.length; ++i) if (args[fields[i]] !== undefined) allowed[fields[i]] = args[fields[i]];
     // Only the existence flag crosses this bridge. Legacy balances must have
@@ -77,7 +78,7 @@ function callEconomy(action, args) {
         throw new Error("Transactional economy backend is not deployed. No legacy settlement fallback is allowed.");
     return response.Result;
 }
-["GetOrMigratePlayerProfile","Spin","NeonNightsSpin","MegaLustPotSpin","MegaLustPotState","ClaimMissionReward","PickBonusCard","ClaimDailyBonus"].forEach(function(action) {
+["GetOrMigratePlayerProfile","Spin","NeonNightsSpin","MegaLustPotSpin","MegaLustPotState","ClaimMissionReward","PickBonusCard","ClaimDailyBonus","GetHotStreakState","ClaimHotStreakReward","EquipCasinoCosmetic"].forEach(function(action) {
     handlers[action] = function(args, context) { return callEconomy(action,args); };
 });
 handlers.GetProgressiveJackpots = function(args, context) { return callNakama({Operation:"Get"}); };

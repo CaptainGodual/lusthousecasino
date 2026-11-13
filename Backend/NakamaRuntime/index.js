@@ -638,9 +638,140 @@ if(typeof module!=='undefined')module.exports=MegaPotRules;
 
 
 
+// ---- hot-streak-rules.js ----
+// Pure ES5 rules. Time, configuration and settled outcomes come from the server.
+var CasinoCosmeticRewards = (function () {
+    var catalog = [
+        {RewardId:"pepper_internal_mild_badge_v1",Name:"Pepper's Mild title",RewardKind:"Presentation",EquipSlot:"EventBadge",Ready:true,PresentationId:"pepper_mild_v1"},
+        {RewardId:"pepper_internal_hot_v1",Name:"Hot outfit and jewelry",RewardKind:"Wearable",EquipSlot:"Outfit",Ready:false},
+        {RewardId:"pepper_internal_extra_hot_v1",Name:"Extra Hot accents",RewardKind:"Wearable",EquipSlot:"Effect",Ready:false},
+        {RewardId:"pepper_internal_inferno_v1",Name:"Inferno Pepper skin",RewardKind:"Wearable",EquipSlot:"Avatar",Ready:false}
+    ];
+    function find(id) { for(var i=0;i<catalog.length;++i) if(catalog[i].RewardId===id)return catalog[i]; return null; }
+    function account(value) {
+        var state=value ? JSON.parse(JSON.stringify(value)) : {balance:0,owned:[],pending:[]};
+        if(typeof state.balance!=="number" || !isFinite(state.balance) || state.balance<0 || !Array.isArray(state.owned) || !Array.isArray(state.pending))
+            throw new Error("Invalid cosmetic ownership account.");
+        if(!state.cosmetics)state.cosmetics={};
+        if(!state.equipped)state.equipped={};
+        return state;
+    }
+    function grant(state,id,eventId,tierId) {
+        var reward=find(id);
+        if(!reward || !reward.Ready)throw new Error("This reward is a preview until its content is ready.");
+        var already=state.owned.indexOf(id)>=0;
+        if(!already)state.owned.push(id);
+        state.cosmetics[id]={RewardId:id,RewardKind:reward.RewardKind,EquipSlot:reward.EquipSlot,EventId:eventId,TierId:tierId};
+        return already;
+    }
+    function equip(state,id,slot) {
+        var reward=find(id);
+        if(!reward || !reward.Ready || reward.EquipSlot!==slot || state.owned.indexOf(id)<0 || !state.cosmetics[id])
+            throw new Error("That reward is unowned or incompatible with this equipment slot.");
+        state.equipped[slot]=id;
+    }
+    return {find:find,account:account,grant:grant,equip:equip};
+}());
+
+var HotStreakRules = (function () {
+    function copy(value){return JSON.parse(JSON.stringify(value));}
+    function integer(value,min){return typeof value==="number" && isFinite(value) && Math.floor(value)===value && value>=min && value<=9007199254740991;}
+    function identifier(value){return typeof value==="string" && /^[A-Za-z0-9_-]{1,64}$/.test(value);}
+    function timestamp(value){return typeof value==="string" && /Z$/.test(value) && isFinite(Date.parse(value));}
+    function validateDefinition(definition) {
+        if(!definition || !identifier(definition.EventId) || !integer(definition.RulesRevision,1) ||
+            !timestamp(definition.StartsAt) || !timestamp(definition.EndsAt) || !timestamp(definition.ClaimUntil) ||
+            !(Date.parse(definition.StartsAt)<Date.parse(definition.EndsAt) && Date.parse(definition.EndsAt)<Date.parse(definition.ClaimUntil)) ||
+            typeof definition.EarningEnabled!=="boolean" || typeof definition.ClaimsEnabled!=="boolean" ||
+            definition.TriggerWins!==3 || definition.WinPolicy!=="BaseWinPositive" || definition.HeatPolicy!=="OnePerWinFromTrigger" ||
+            !integer(definition.ClientPresentationVersion,1) || definition.RepeatOwnershipPolicy!=="KeepExisting" || !Array.isArray(definition.EligibleGames) || !definition.EligibleGames.length ||
+            definition.EligibleGames.length>2 || !Array.isArray(definition.Tiers) || definition.Tiers.length!==4)
+            throw new Error("Invalid Hot Streak definition.");
+        var games={},tiers={},rewards={},last=0;
+        for(var g=0;g<definition.EligibleGames.length;++g){
+            var game=definition.EligibleGames[g];
+            if((game!=="SugarLust" && game!=="NeonNights") || games[game])throw new Error("Invalid Hot Streak eligible games.");
+            games[game]=true;
+        }
+        var names=["Mild","Hot","ExtraHot","Inferno"];
+        for(var i=0;i<definition.Tiers.length;++i){
+            var tier=definition.Tiers[i], reward=CasinoCosmeticRewards.find(tier.RewardId);
+            if(tier.TierId!==names[i] || tiers[tier.TierId] || !integer(tier.HeatRequired,1) || tier.HeatRequired<=last ||
+                !reward || rewards[tier.RewardId] || typeof tier.ClaimEnabled!=="boolean" || (tier.ClaimEnabled && !reward.Ready))
+                throw new Error("Invalid Hot Streak reward tier.");
+            tiers[tier.TierId]=true;rewards[tier.RewardId]=true;last=tier.HeatRequired;
+        }
+        return definition;
+    }
+    function validateConfig(config) {
+        if(!config || config.SchemaVersion!==1 || !identifier(config.ActiveEventId) || !Array.isArray(config.Events) || !config.Events.length || config.Events.length>24)
+            throw new Error("Invalid Hot Streak configuration.");
+        var ids={};
+        for(var i=0;i<config.Events.length;++i){validateDefinition(config.Events[i]);if(ids[config.Events[i].EventId])throw new Error("Duplicate Hot Streak event.");ids[config.Events[i].EventId]=true;}
+        if(!ids[config.ActiveEventId])throw new Error("Missing active Hot Streak definition.");
+        return config;
+    }
+    function definition(config,id){if(!config)return null;for(var i=0;i<config.Events.length;++i)if(config.Events[i].EventId===id)return config.Events[i];return null;}
+    function frozenDefinition(value){var result=copy(value);delete result.EarningEnabled;delete result.ClaimsEnabled;return JSON.stringify(result);}
+    function phase(def,time) {
+        if(!def)return "Disabled";
+        if(time<Date.parse(def.StartsAt))return "Upcoming";
+        if(time>=Date.parse(def.ClaimUntil))return "Archived";
+        if(time>=Date.parse(def.EndsAt))return "ClaimOnly";
+        return def.EarningEnabled ? "Active" : "Disabled";
+    }
+    function create(def){return {SchemaVersion:1,RulesRevision:def.RulesRevision,CurrentStreak:0,BestStreak:0,Heat:0,UnlockedTierIds:[],ClaimedTierIds:[],ProgressRevision:0,LastProcessedSpinId:""};}
+    function validateProgress(state,def) {
+        if(!state || state.SchemaVersion!==1 || state.RulesRevision!==def.RulesRevision || !integer(state.CurrentStreak,0) ||
+            !integer(state.BestStreak,0) || state.BestStreak<state.CurrentStreak || !integer(state.Heat,0) || !integer(state.ProgressRevision,0) ||
+            !Array.isArray(state.UnlockedTierIds) || !Array.isArray(state.ClaimedTierIds) || typeof state.LastProcessedSpinId!=="string")
+            throw new Error("Invalid saved Hot Streak progress.");
+        var seen={},claimed={};
+        for(var i=0;i<state.UnlockedTierIds.length;++i){var tier=findTier(def,state.UnlockedTierIds[i]);if(!tier || seen[tier.TierId] || state.Heat<tier.HeatRequired)throw new Error("Invalid unlocked Hot Streak tier.");seen[tier.TierId]=true;}
+        for(var c=0;c<state.ClaimedTierIds.length;++c){var id=state.ClaimedTierIds[c];if(!seen[id] || claimed[id])throw new Error("Invalid claimed Hot Streak tier.");claimed[id]=true;}
+        return state;
+    }
+    function findTier(def,id){for(var i=0;i<def.Tiers.length;++i)if(def.Tiers[i].TierId===id)return def.Tiers[i];return null;}
+    function evaluate(def,time,state,input) {
+        validateDefinition(def);state=copy(validateProgress(state || create(def),def));
+        var before=state.CurrentStreak;
+        var delta={EventId:def.EventId,SpinId:input.SpinId,RulesRevision:def.RulesRevision,Eligible:false,StreakBefore:before,StreakAfter:before,
+            HeatAdded:0,NewlyUnlockedTierIds:[],TriggerKind:"None",ProgressRevision:state.ProgressRevision};
+        if(phase(def,time)!=="Active" || input.Mode!=="PaidBase" || def.EligibleGames.indexOf(input.Game)<0)return {State:state,Delta:delta};
+        if(!integer(input.BaseWin,0) || !identifier(input.SpinId))throw new Error("Invalid settled Hot Streak outcome.");
+        delta.Eligible=true;
+        state.CurrentStreak=input.BaseWin>0 ? before+1 : 0;
+        state.BestStreak=Math.max(state.BestStreak,state.CurrentStreak);
+        delta.HeatAdded=state.CurrentStreak>=def.TriggerWins ? 1 : 0;
+        state.Heat+=delta.HeatAdded;state.ProgressRevision+=1;state.LastProcessedSpinId=input.SpinId;
+        if(!integer(state.Heat,0) || !integer(state.ProgressRevision,0) || !integer(state.CurrentStreak,0))throw new Error("Hot Streak progress exceeds safe range.");
+        for(var i=0;i<def.Tiers.length;++i){var tier=def.Tiers[i];if(state.Heat>=tier.HeatRequired && state.UnlockedTierIds.indexOf(tier.TierId)<0){state.UnlockedTierIds.push(tier.TierId);delta.NewlyUnlockedTierIds.push(tier.TierId);}}
+        delta.StreakAfter=state.CurrentStreak;delta.ProgressRevision=state.ProgressRevision;
+        delta.TriggerKind=before===2 && state.CurrentStreak===3 ? "Entrance" : before>=3 && state.CurrentStreak===0 ? "StreakBreak" : delta.HeatAdded ? "Extension" : "None";
+        return {State:state,Delta:delta};
+    }
+    function snapshot(def,time,state,revision,ownership) {
+        var serverTime=new Date(time).toISOString();
+        if(!def)return {Available:false,Phase:"Disabled",ServerTime:serverTime,AccountRevision:revision};
+        state=validateProgress(state || create(def),def);
+        var currentPhase=phase(def,time),canClaim=def.ClaimsEnabled && time>=Date.parse(def.StartsAt) && time<Date.parse(def.ClaimUntil);
+        return {Available:true,EventId:def.EventId,RulesRevision:def.RulesRevision,Name:"Hot Streak with Pepper",Phase:currentPhase,
+            ServerTime:serverTime,StartsAt:def.StartsAt,EndsAt:def.EndsAt,ClaimUntil:def.ClaimUntil,TriggerWins:def.TriggerWins,
+            ClientPresentationVersion:def.ClientPresentationVersion,EligibleGames:copy(def.EligibleGames),Progress:copy(state),AccountRevision:revision,
+            OwnedRewardIds:ownership ? ownership.owned.filter(function(id){return !!CasinoCosmeticRewards.find(id);}) : [],
+            EquippedRewardId:ownership && ownership.equipped ? ownership.equipped.EventBadge || "" : "",
+            Tiers:def.Tiers.map(function(tier){var reward=CasinoCosmeticRewards.find(tier.RewardId),unlocked=state.UnlockedTierIds.indexOf(tier.TierId)>=0,claimed=state.ClaimedTierIds.indexOf(tier.TierId)>=0;
+                return {TierId:tier.TierId,HeatRequired:tier.HeatRequired,RewardId:tier.RewardId,RewardName:reward.Name,RewardKind:reward.RewardKind,EquipSlot:reward.EquipSlot,
+                    RewardReady:reward.Ready,Unlocked:unlocked,Claimed:claimed,Claimable:canClaim && tier.ClaimEnabled && reward.Ready && unlocked && !claimed};})};
+    }
+    return {validateConfig:validateConfig,validateDefinition:validateDefinition,definition:definition,frozenDefinition:frozenDefinition,phase:phase,create:create,
+        validateProgress:validateProgress,findTier:findTier,evaluate:evaluate,snapshot:snapshot,identifier:identifier};
+}());
+
+
 // ---- economy-domain.js ----
 // Pure economy rules. Storage and reel execution are injected by the transaction coordinator.
-function createEconomyDomain(currentPlayerId, store, callNakama) {
+function createEconomyDomain(currentPlayerId, store, callNakama, hotStreak) {
 var handlers = {};
 var PROFILE_KEY = "SugarLustProfile";
 var NAKAMA_URL_KEY = "SugarLustNakamaGatewayUrl";
@@ -776,6 +907,7 @@ function publicProfile(profile, jackpots) {
         FreeSpins:{ SugarLust:freeSpinState(profile, "SugarLust"), NeonNights:freeSpinState(profile, "NeonNights") }
     };
     if (jackpots) result.Jackpots = jackpots;
+    if (hotStreak) result.HotStreak = hotStreak.snapshot(profile);
     return result;
 }
 
@@ -881,6 +1013,7 @@ handlers.Spin = function (args, context) {
     }
     var stops = outcome.Stops;
     var totalWin = outcome.Win;
+    var hotStreakDelta = hotStreak ? hotStreak.settle(profile, "SugarLust", wasFree, outcome.BaseWin, spinId) : null;
     profile.Coins = profile.Coins - (wasFree ? 0 : totalBet) + totalWin;
     settleFreeSpin(profile, "SugarLust", wasFree, betPerLine, activeLines, totalWin, outcome.FreeSpinCount);
     var xpAwarded = Math.min(250, 10 + Math.floor(totalBet / 1000));
@@ -910,6 +1043,7 @@ handlers.Spin = function (args, context) {
         Stops:stops, Win:totalWin, BaseWin:outcome.BaseWin, JackpotWin:outcome.JackpotWin,
         ScatterCount:outcome.ScatterCount, FreeSpinCount:outcome.FreeSpinCount, RulesVersion:4,
         RecoveredLegacyReceipt:isRecoveredLegacyReceipt(outcome, 4),
+        HotStreakDelta:hotStreakDelta,
         Profile:publicProfile(profile, outcome.Jackpots)
     };
     // If the client retries after a network interruption, replay this result
@@ -998,6 +1132,7 @@ handlers.NeonNightsSpin = function (args, context) {
         rejectSpinResult("Neon Nights", outcome);
     }
 
+    var hotStreakDelta = hotStreak ? hotStreak.settle(profile, "NeonNights", wasFree, outcome.BaseWin, spinId) : null;
     profile.Coins = profile.Coins - (wasFree ? 0 : totalBet) + outcome.Win;
     settleFreeSpin(profile, "NeonNights", wasFree, bet, 5, outcome.Win, outcome.FreeSpinCount);
     var xpAwarded = Math.min(250, 10 + Math.floor(totalBet / 1000));
@@ -1030,6 +1165,7 @@ handlers.NeonNightsSpin = function (args, context) {
         JackpotWin:outcome.JackpotWin, ScatterCount:outcome.ScatterCount,
         FreeSpinCount:outcome.FreeSpinCount, RulesVersion:5,
         RecoveredLegacyReceipt:isRecoveredLegacyReceipt(outcome, 5),
+        HotStreakDelta:hotStreakDelta,
         Bonus:bonusResult,
         Profile:publicProfile(profile, outcome.Jackpots)
     };
@@ -1151,7 +1287,8 @@ return handlers;
 // Transaction coordinator. All helpers below run synchronously inside a single
 // storageWriteRetry callback. No HTTP, PlayFab writes or nested database commits.
 var ECONOMY_COLLECTION = "slot_economy";
-var ECONOMY_ACTIONS = ["GetOrMigratePlayerProfile","Spin","NeonNightsSpin","MegaLustPotSpin","MegaLustPotState","ClaimMissionReward","PickBonusCard","ClaimDailyBonus"];
+var ECONOMY_ACTIONS = ["GetOrMigratePlayerProfile","Spin","NeonNightsSpin","MegaLustPotSpin","MegaLustPotState","ClaimMissionReward","PickBonusCard","ClaimDailyBonus","GetHotStreakState","ClaimHotStreakReward","EquipCasinoCosmetic"];
+var HOT_STREAK_CONFIG_KEY = "hot_streak";
 function economyClone(value) { return JSON.parse(JSON.stringify(value)); }
 function economyRead(collection, key) { return {collection:collection,key:key,userId:SYSTEM_USER_ID}; }
 function economyObjectKey(row) { return row.collection + "/" + row.key; }
@@ -1162,7 +1299,8 @@ function economyWrite(read, value, row) {
 function economyFingerprint(action, args) {
     var fields = {Spin:["SpinId","BetPerLine","ActiveLines"],NeonNightsSpin:["SpinId","Bet"],MegaLustPotSpin:["SpinId","Bet","ExpectedRevision"],MegaLustPotState:[],
         ClaimMissionReward:["ClaimId","MissionId"],PickBonusCard:["Card"],
-        ClaimDailyBonus:[],GetOrMigratePlayerProfile:[]}[action];
+        ClaimDailyBonus:[],GetOrMigratePlayerProfile:[],GetHotStreakState:[],
+        ClaimHotStreakReward:["ClaimId","EventId","TierId"],EquipCasinoCosmetic:["EquipId","RewardId","Slot"]}[action];
     var value = {Action:action};
     for (var i=0;i<fields.length;++i) {
         var field=fields[i];
@@ -1177,6 +1315,7 @@ function rpcGateway(ctx, logger, nk, payload) {
     if (ctx.userId) throw new Error("This RPC is reserved for server-to-server calls.");
     var request=JSON.parse(payload || "{}");
     if (request.Operation === "StageMigration") return rpcStageEconomyMigration(ctx,nk,request);
+    if (request.Operation === "ConfigureHotStreak") return rpcConfigureHotStreak(ctx,nk,request);
     if (request.Operation === "Economy") return rpcEconomy(ctx,logger,nk,request);
     // Old CloudScript cannot mutate separate reel/pool transactions during cutover.
     if (request.Operation !== "Get" && request.Operation !== "LustVend")
@@ -1192,16 +1331,27 @@ function rpcEconomy(ctx, logger, nk, request) {
     var fingerprint=economyFingerprint(action,args);
     var mega=action === "MegaLustPotSpin";
     var spin=action === "Spin" || action === "NeonNightsSpin" || mega;
-    var id=spin ? args.SpinId : action === "ClaimMissionReward" ? args.ClaimId : "";
-    if ((spin || action === "ClaimMissionReward") && (typeof id !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(id)))
+    var eventClaim=action === "ClaimHotStreakReward", equip=action === "EquipCasinoCosmetic";
+    var id=spin ? args.SpinId : action === "ClaimMissionReward" || eventClaim ? args.ClaimId : equip ? args.EquipId : "";
+    if ((spin || action === "ClaimMissionReward" || eventClaim || equip) && (typeof id !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(id)))
         throw new Error("Invalid settlement identifier.");
+    if(eventClaim && (!HotStreakRules.identifier(args.EventId) || !HotStreakRules.identifier(args.TierId)))throw new Error("Invalid event claim identifiers.");
+    if(equip && (!HotStreakRules.identifier(args.RewardId) || !HotStreakRules.identifier(args.Slot)))throw new Error("Invalid cosmetic equipment identifiers.");
+    // Pin admission time and season before any database retry. The config row is
+    // also read inside the CAS batch and conditionally touched when used.
+    var admittedAt=Date.now(),configRead=economyRead("event_config",HOT_STREAK_CONFIG_KEY);
+    var initialConfigRows=nk.storageRead([configRead]),pinnedEventId="";
+    try { if(initialConfigRows.length)pinnedEventId=HotStreakRules.validateConfig(parseJsonValue(initialConfigRows[0].value,"event configuration")).ActiveEventId; } catch(configError) { /* Optional event cannot break a paid spin. */ }
     var accountRead=economyRead(ECONOMY_COLLECTION,"account_"+player);
     var receiptRead=id ? economyRead(ECONOMY_COLLECTION,"receipt_"+nk.sha256Hash(player+"|"+action+"|"+id)) : null;
     var importRead=economyRead(ECONOMY_COLLECTION,"legacy_"+player);
-    var reads=[accountRead,importRead,economyRead(COLLECTION,JACKPOT_KEY),
+    var vendRead=economyRead("lustvend","account_"+player);
+    var grantRead=eventClaim ? economyRead("lustvend","event_grant_"+nk.sha256Hash(player+"|"+args.EventId+"|"+args.TierId)) : null;
+    var reads=[accountRead,importRead,configRead,vendRead,economyRead(COLLECTION,JACKPOT_KEY),
         economyRead(COLLECTION,RECEIPTS_KEY_PREFIX+player),economyRead(COLLECTION,NEON_RECEIPTS_KEY_PREFIX+player)];
     if (receiptRead) reads.push(receiptRead);
-    if (spin && !mega) reads=reads.concat(vendActivityReads(player,action === "Spin" ? "sugar" : "neon",id));
+    if (grantRead) reads.push(grantRead);
+    if (spin && !mega) reads.push(vendActivityReads(player,action === "Spin" ? "sugar" : "neon",id)[1]);
     var result;
     nk.storageWriteRetry(reads,function(objects) {
         // A retry must start from fresh values, never a mutated failed attempt.
@@ -1227,6 +1377,45 @@ function rpcEconomy(ctx, logger, nk, request) {
         if (account.SchemaVersion!==1 || !account.Profile || typeof account.Profile.Coins!=="number")
             throw new Error("Malformed transactional account; leaving it untouched.");
         var profile=account.Profile;
+        var configRow=row(configRead),config=null,definition=null,ownership=null;
+        try {
+            config=configRow ? HotStreakRules.validateConfig(parseJsonValue(configRow.value,"event configuration")) : null;
+            definition=HotStreakRules.definition(config,eventClaim ? args.EventId : pinnedEventId);
+            if(!eventClaim && config && config.ActiveEventId!==pinnedEventId)definition=null;
+        } catch(configError) { config=null;definition=null; }
+        var ownershipRow=row(vendRead);
+        function currentOwnership() {
+            if(!ownership)ownership=CasinoCosmeticRewards.account(ownershipRow ? parseJsonValue(ownershipRow.value,"cosmetic ownership") : null);
+            return ownership;
+        }
+        function eventState(value,initialize,selected) {
+            selected=selected || definition;
+            if(!selected)return null;
+            if(value.HotStreak && (typeof value.HotStreak!=="object" || Array.isArray(value.HotStreak)))throw new Error("Invalid saved event map.");
+            if(!value.HotStreak && initialize)value.HotStreak={};
+            var state=value.HotStreak && value.HotStreak[selected.EventId];
+            if(!state && initialize)state=value.HotStreak[selected.EventId]=HotStreakRules.create(selected);
+            return state || HotStreakRules.create(selected);
+        }
+        function touchConfiguration() { staged[economyObjectKey(configRead)]=economyWrite(configRead,economyClone(config),configRow); }
+        var eventContext={
+            snapshot:function(value) {
+                var active=HotStreakRules.definition(config,config ? config.ActiveEventId : "");
+                try { return HotStreakRules.snapshot(active,admittedAt,eventState(value,false,active),account.Revision,currentOwnership()); }
+                catch(eventError) { return HotStreakRules.snapshot(null,admittedAt,null,account.Revision,null); }
+            },
+            settle:function(value,game,wasFree,baseWin,spinId) {
+                if(!definition)return null;
+                // Malformed optional event state disables earning without losing
+                // an otherwise valid wager or resetting saved event progress.
+                var state;
+                try { state=HotStreakRules.validateProgress(eventState(value,false),definition); }
+                catch(eventError) { return null; }
+                var evaluated=HotStreakRules.evaluate(definition,admittedAt,state,{Game:game,Mode:wasFree ? "FreeSpin" : "PaidBase",BaseWin:baseWin,SpinId:spinId});
+                if(evaluated.Delta.Eligible){eventState(value,true);value.HotStreak[definition.EventId]=evaluated.State;touchConfiguration();}
+                return evaluated.Delta;
+            }
+        };
         // The existing reel helpers operate on this in-memory overlay. Their
         // pool, recent-receipt and gem writes join the final conditional batch.
         var overlay={
@@ -1253,7 +1442,7 @@ function rpcEconomy(ctx, logger, nk, request) {
         var domain=createEconomyDomain(player,{
             read:function() {return economyClone(profile);},
             write:function(value) {profile=economyClone(value);account.Profile=profile;}
-        },function(reelRequest) {return JSON.parse(rpcProgressive({},logger,overlay,JSON.stringify(reelRequest)));});
+        },function(reelRequest) {return JSON.parse(rpcProgressive({},logger,overlay,JSON.stringify(reelRequest)));},eventContext);
         var jackpotRow=row(economyRead(COLLECTION,JACKPOT_KEY));
         var jackpots=jackpotRow ? publicJackpots(validateJackpots(parseJsonValue(jackpotRow.value,"jackpots"))) : publicJackpots(seedJackpots());
         var receiptRow=receiptRead ? row(receiptRead) : null;
@@ -1262,6 +1451,7 @@ function rpcEconomy(ctx, logger, nk, request) {
             if(settled.Fingerprint!==fingerprint) throw new Error("Settlement identifier conflicts with original request.");
             result=economyClone(settled.Response);
             if(result.Profile) result.Profile=domain.__snapshot(jackpots);
+            result.Replayed=true;
             return []; // No second payment, feature consumption, XP or gem grant.
         }
         var legacy=spin && account.LegacySettled && account.LegacySettled[action];
@@ -1274,6 +1464,7 @@ function rpcEconomy(ctx, logger, nk, request) {
                 result.RulesVersion=expectedVersion;result.RecoveredLegacyReceipt=true;
             }
             result.Profile=domain.__snapshot(jackpots);
+            result.Replayed=true;
         } else {
             if(spin && !mega) {
                 var recentRow=row(economyRead(COLLECTION,(action === "Spin" ? RECEIPTS_KEY_PREFIX : NEON_RECEIPTS_KEY_PREFIX)+player));
@@ -1283,13 +1474,54 @@ function rpcEconomy(ctx, logger, nk, request) {
                 var activity=vendActivityReads(player,action === "Spin" ? "sugar" : "neon",id)[1];
                 if(row(activity)) throw new Error("Legacy spin needs settlement reconciliation; no reroll or automatic payment allowed.");
             }
-            result=domain[action](args,{});
+            if(eventClaim) {
+                if(!definition)throw new Error("Hot Streak event configuration is unavailable.");
+                var progress=HotStreakRules.validateProgress(eventState(profile,false),definition);
+                var tier=HotStreakRules.findTier(definition,args.TierId);
+                if(!tier)throw new Error("Unknown Hot Streak tier.");
+                // Different ClaimIds share this permanent per-player season/tier
+                // grant identity. Same-ID replay above also works after expiry.
+                var alreadyClaimed=progress.ClaimedTierIds.indexOf(tier.TierId)>=0;
+                if(!definition.ClaimsEnabled || admittedAt<Date.parse(definition.StartsAt) || admittedAt>=Date.parse(definition.ClaimUntil))
+                    throw new Error("Hot Streak reward claims are closed.");
+                if(progress.Heat<tier.HeatRequired || progress.UnlockedTierIds.indexOf(tier.TierId)<0)throw new Error("Hot Streak tier is not unlocked.");
+                if(!tier.ClaimEnabled || !CasinoCosmeticRewards.find(tier.RewardId).Ready)throw new Error("This reward is a preview until its content is ready.");
+                var grantRow=row(grantRead),alreadyOwned=currentOwnership().owned.indexOf(tier.RewardId)>=0;
+                if(alreadyClaimed && !grantRow)throw new Error("Hot Streak grant needs reconciliation.");
+                if(!alreadyClaimed) {
+                    if(grantRow)throw new Error("Hot Streak grant needs reconciliation.");
+                    CasinoCosmeticRewards.grant(currentOwnership(),tier.RewardId,definition.EventId,tier.TierId);
+                    progress=economyClone(progress);progress.ClaimedTierIds.push(tier.TierId);progress.ProgressRevision++;
+                    eventState(profile,true);profile.HotStreak[definition.EventId]=progress;
+                    staged[economyObjectKey(vendRead)]=economyWrite(vendRead,ownership,ownershipRow);
+                    staged[economyObjectKey(grantRead)]=economyWrite(grantRead,{EventId:definition.EventId,TierId:tier.TierId,RewardId:tier.RewardId,AlreadyOwned:alreadyOwned,GrantedAt:new Date(admittedAt).toISOString()},null);
+                    touchConfiguration();
+                }
+                result={EventId:definition.EventId,TierId:tier.TierId,RewardId:tier.RewardId,AlreadyClaimed:alreadyClaimed,AlreadyOwned:alreadyOwned,Claimed:true,Profile:domain.__snapshot(jackpots)};
+            } else if(equip) {
+                CasinoCosmeticRewards.equip(currentOwnership(),args.RewardId,args.Slot);
+                staged[economyObjectKey(vendRead)]=economyWrite(vendRead,ownership,ownershipRow);
+                result={RewardId:args.RewardId,Slot:args.Slot,Equipped:true,Profile:domain.__snapshot(jackpots)};
+            } else if(action==="GetHotStreakState") {
+                if(definition){try { HotStreakRules.validateProgress(eventState(profile,false),definition);eventState(profile,true); }catch(eventError){/* Preserve malformed state for repair. */}}
+                result={Profile:domain.__snapshot(jackpots)};
+            } else {
+                if(action==="GetOrMigratePlayerProfile" && definition){try { HotStreakRules.validateProgress(eventState(profile,false),definition);eventState(profile,true); }catch(eventError){/* Preserve malformed state for repair. */}}
+                result=domain[action](args,{});
+            }
         }
         if (!isFinite(profile.Coins) || profile.Coins<0 || Math.floor(profile.Coins)!==profile.Coins || profile.Coins>9007199254740991)
             throw new Error("Coin settlement exceeds safe integer range.");
         // Even read/migration and claim operations share the account CAS row.
         // This serializes every coin/feature mutation across games and devices.
         account.Profile=profile;account.Revision+=1;
+        var publicState=domain.__snapshot(jackpots);
+        if(result.Profile){
+            result.Profile.AccountRevision=account.Revision;
+            result.Profile.HotStreak=publicState.HotStreak;
+        } else if(action==="GetOrMigratePlayerProfile") {
+            result.AccountRevision=account.Revision;result.HotStreak=publicState.HotStreak;
+        }
         staged[economyObjectKey(accountRead)]=economyWrite(accountRead,account,accountRow);
         if(receiptRead) staged[economyObjectKey(receiptRead)]=economyWrite(receiptRead,{
             Fingerprint:fingerprint,Response:result,AccountRevision:account.Revision,
@@ -1301,6 +1533,25 @@ function rpcEconomy(ctx, logger, nk, request) {
         return writes;
     },10);
     return JSON.stringify({SettlementVersion:1,Result:result});
+}
+
+// Private release operation; never registered as a player CloudScript action.
+function rpcConfigureHotStreak(ctx,nk,request) {
+    if(ctx.userId)throw new Error("This RPC is reserved for server-to-server calls.");
+    var proposed=HotStreakRules.validateConfig(economyClone(request.Configuration));
+    var read=economyRead("event_config",HOT_STREAK_CONFIG_KEY),version;
+    nk.storageWriteRetry([read],function(objects){
+        var existing=objects.length ? objects[0] : null;
+        if(request.ExpectedVersion!==(existing ? existing.version : "*"))throw new Error("Hot Streak configuration version changed. Refresh before publishing.");
+        if(existing){
+            var previous=HotStreakRules.validateConfig(parseJsonValue(existing.value,"event configuration"));
+            for(var i=0;i<previous.Events.length;++i){var old=previous.Events[i],next=HotStreakRules.definition(proposed,old.EventId);
+                if(!next || HotStreakRules.frozenDefinition(old)!==HotStreakRules.frozenDefinition(next))throw new Error("Published event rules are immutable; preserve old seasons and use a new EventId.");}
+        }
+        version=existing ? existing.version : "*";
+        return [economyWrite(read,proposed,existing)];
+    },10);
+    return JSON.stringify({Configured:true,ActiveEventId:proposed.ActiveEventId,PreviousVersion:version});
 }
 
 // Private HTTP-key RPC only. There is deliberately no player-facing CloudScript

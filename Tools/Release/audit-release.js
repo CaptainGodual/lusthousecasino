@@ -38,16 +38,16 @@ add('git-head',git.status===0 && /^[a-f0-9]{40,64}$/i.test(sha)?'passed':'blocke
 if (args.includes('--reuse-checks')) {
   const previousPath=path.join(root,'Saved/ReleaseAudit/current.json');
   if (fs.existsSync(previousPath)) {
-    for(const c of readJson(previousPath).checks) if(!['project-config','git-head','editor-build','editor-automation','windows-package'].includes(c.id)) checks.push(c);
+    for(const c of readJson(previousPath).checks) if(!['project-config','git-head','editor-build','shipping-build','editor-automation','windows-package'].includes(c.id)) checks.push(c);
   }
 } else {
   command('runtime-bundle',process.execPath,['Tools/Backend/build-runtime.js','--check']);
-  for(const [id,file] of [['settlement','Backend/Tests/settlement.test.js'],['free-spins','Backend/Tests/free-spins.test.js'],['mega-pot','Backend/Tests/mega-pot.test.js'],['setup-workflow','Backend/Tests/finish-settlement-setup.test.js'],['lustvend','Backend/NakamaRuntime/test_lustvend.js'],['release-policy','Tools/Release/release-policy.test.js']]) command(id,process.execPath,[file]);
+  for(const [id,file] of [['settlement','Backend/Tests/settlement.test.js'],['free-spins','Backend/Tests/free-spins.test.js'],['mega-pot','Backend/Tests/mega-pot.test.js'],['setup-workflow','Backend/Tests/finish-settlement-setup.test.js'],['lustvend','Backend/NakamaRuntime/test_lustvend.js'],['release-policy','Tools/Release/release-policy.test.js'],['native-policy','Tools/Release/inspect-native-evidence.test.js']]) command(id,process.execPath,[file]);
   command('lustvend-python',process.platform==='win32'?'python':'python3',['-m','unittest','-v','test_server'],{cwd:path.join(root,'Backend/LustVend'),metadata:{required:false}});
 }
 
 const evidenceDir=option('--unreal-evidence');
-for(const [id,mode] of [['editor-build','EditorBuild'],['editor-automation','EditorTests'],['windows-package','WindowsCheckpoint']]) {
+for(const [id,mode] of [['editor-build','EditorBuild'],['shipping-build','ShippingBuild'],['editor-automation','EditorTests'],['windows-package','WindowsCheckpoint']]) {
   const evidenceFile=evidenceDir?path.resolve(root,evidenceDir,mode+'-evidence.json'):null;
   if(evidenceFile && fs.existsSync(evidenceFile)) {
     const e=readJson(evidenceFile);

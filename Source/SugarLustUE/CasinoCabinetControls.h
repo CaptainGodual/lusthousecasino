@@ -22,6 +22,7 @@ private:
  UPROPERTY(Transient) TObjectPtr<UTextBlock> Win;
  UPROPERTY(Transient) TObjectPtr<UTextBlock> Status;
  UPROPERTY(Transient) TObjectPtr<UTextBlock> AutoLabel;
+ UPROPERTY(Transient) TObjectPtr<UTextBlock> HotStreakLabel;
  UPROPERTY(Transient) TObjectPtr<UButton> Minus;
  UPROPERTY(Transient) TObjectPtr<UButton> Plus;
  UPROPERTY(Transient) TObjectPtr<UButton> Max;
@@ -32,4 +33,5 @@ private:
  UFUNCTION() void MaxBet();
  UFUNCTION() void DoSpin();
  UFUNCTION() void DoAuto();
+ UFUNCTION() void OpenEvents();
 };

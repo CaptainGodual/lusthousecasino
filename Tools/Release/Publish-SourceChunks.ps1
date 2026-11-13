@@ -6,37 +6,11 @@ param(
     [switch]$CheckRuntime
 )
 $ErrorActionPreference = 'Stop'
-if ($NodePath -and -not (Test-Path -LiteralPath $NodePath -PathType Leaf)) {
-    throw "The specified Node executable does not exist: $NodePath"
-}
-$nodeCandidates = @($NodePath, $env:CODEX_PRIMARY_RUNTIME_NODE)
-$nodeCommand = Get-Command node -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
-if ($nodeCommand) { $nodeCandidates += $nodeCommand.Source }
-foreach ($runtimeBase in @($env:ProgramFiles, $env:LOCALAPPDATA, $env:USERPROFILE, $env:NVM_SYMLINK)) {
-    if (-not $runtimeBase) { continue }
-    $runtimeSuffixes = if ($runtimeBase -eq $env:USERPROFILE) {
-        @('.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe')
-    } elseif ($runtimeBase -eq $env:LOCALAPPDATA) {
-        @('Programs\nodejs\node.exe')
-    } elseif ($runtimeBase -eq $env:NVM_SYMLINK) {
-        @('node.exe')
-    } else {
-        @('nodejs\node.exe')
-    }
-    foreach ($runtimeSuffix in $runtimeSuffixes) {
-        $nodeCandidates += Join-Path $runtimeBase $runtimeSuffix
-    }
-}
-$nodeExecutable = $nodeCandidates | Where-Object {
-    $_ -and (Test-Path -LiteralPath $_ -PathType Leaf)
-} | Select-Object -First 1
-if (-not $nodeExecutable) {
-    throw 'Node.js was not found on PATH or in the Codex runtime. Run this command with -NodePath followed by the full path to node.exe.'
-}
-$nodeVersion = & $nodeExecutable --version
-if ($LASTEXITCODE -ne 0) { throw "Node could not start: $nodeExecutable" }
+. (Join-Path $PSScriptRoot 'Resolve-NodeRuntime.ps1')
+$nodeRuntime = Resolve-ProjectNodeRuntime -NodePath $NodePath
+$nodeExecutable = $nodeRuntime.Path
 if ($CheckRuntime) {
-    Write-Output "Node runtime: $nodeExecutable ($nodeVersion)"
+    Write-Output "Node runtime: $nodeExecutable ($($nodeRuntime.Version))"
     return
 }
 if (-not $PreparedDirectory) {

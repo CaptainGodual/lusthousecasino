@@ -1,5 +1,5 @@
 // Pure economy rules. Storage and reel execution are injected by the transaction coordinator.
-function createEconomyDomain(currentPlayerId, store, callNakama) {
+function createEconomyDomain(currentPlayerId, store, callNakama, hotStreak) {
 var handlers = {};
 var PROFILE_KEY = "SugarLustProfile";
 var NAKAMA_URL_KEY = "SugarLustNakamaGatewayUrl";
@@ -135,6 +135,7 @@ function publicProfile(profile, jackpots) {
         FreeSpins:{ SugarLust:freeSpinState(profile, "SugarLust"), NeonNights:freeSpinState(profile, "NeonNights") }
     };
     if (jackpots) result.Jackpots = jackpots;
+    if (hotStreak) result.HotStreak = hotStreak.snapshot(profile);
     return result;
 }
 
@@ -240,6 +241,7 @@ handlers.Spin = function (args, context) {
     }
     var stops = outcome.Stops;
     var totalWin = outcome.Win;
+    var hotStreakDelta = hotStreak ? hotStreak.settle(profile, "SugarLust", wasFree, outcome.BaseWin, spinId) : null;
     profile.Coins = profile.Coins - (wasFree ? 0 : totalBet) + totalWin;
     settleFreeSpin(profile, "SugarLust", wasFree, betPerLine, activeLines, totalWin, outcome.FreeSpinCount);
     var xpAwarded = Math.min(250, 10 + Math.floor(totalBet / 1000));
@@ -269,6 +271,7 @@ handlers.Spin = function (args, context) {
         Stops:stops, Win:totalWin, BaseWin:outcome.BaseWin, JackpotWin:outcome.JackpotWin,
         ScatterCount:outcome.ScatterCount, FreeSpinCount:outcome.FreeSpinCount, RulesVersion:4,
         RecoveredLegacyReceipt:isRecoveredLegacyReceipt(outcome, 4),
+        HotStreakDelta:hotStreakDelta,
         Profile:publicProfile(profile, outcome.Jackpots)
     };
     // If the client retries after a network interruption, replay this result
@@ -357,6 +360,7 @@ handlers.NeonNightsSpin = function (args, context) {
         rejectSpinResult("Neon Nights", outcome);
     }
 
+    var hotStreakDelta = hotStreak ? hotStreak.settle(profile, "NeonNights", wasFree, outcome.BaseWin, spinId) : null;
     profile.Coins = profile.Coins - (wasFree ? 0 : totalBet) + outcome.Win;
     settleFreeSpin(profile, "NeonNights", wasFree, bet, 5, outcome.Win, outcome.FreeSpinCount);
     var xpAwarded = Math.min(250, 10 + Math.floor(totalBet / 1000));
@@ -389,6 +393,7 @@ handlers.NeonNightsSpin = function (args, context) {
         JackpotWin:outcome.JackpotWin, ScatterCount:outcome.ScatterCount,
         FreeSpinCount:outcome.FreeSpinCount, RulesVersion:5,
         RecoveredLegacyReceipt:isRecoveredLegacyReceipt(outcome, 5),
+        HotStreakDelta:hotStreakDelta,
         Bonus:bonusResult,
         Profile:publicProfile(profile, outcome.Jackpots)
     };

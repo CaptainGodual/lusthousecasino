@@ -1,10 +1,18 @@
 # Recovering the first source upload
 
+Completed: all 14 commits are published and installed on local master at
+aa4b4c970d1c2156f3e2ca3b6d7f5c87a501d724. The local index matches the
+prepared inventory, and installation LFS integrity checks passed. Original
+commits are retained on backup/pre-lfs-6cf1c73f97bc.
+A fresh independent clone/build is still required for REL-01 acceptance.
+The procedure below is retained as recovery history; normal development
+continues from master.
+
 The active project is SugarLustUE.uproject. The original local root is
 7d5c2fe525ad4dcc938842e8aab7c69e267d040c. That root commit contains
 2,369 files and 5,957,392,317 bytes of uncompressed content (about 5.55 GiB).
 Seven Unreal packages exceed GitHub's 100 MiB raw-file limit. Repeatedly pushing
-the same commit cannot resolve those individual-file limits. The current local branch is main at
+the same commit cannot resolve those individual-file limits. The upload input was local main at
 6cf1c73f97bcc0771c3d7b93cc6231c0291e7458, including a second local commit
 with the initial uploader. Both commits are retained in the input history.
 
@@ -66,8 +74,8 @@ and dependency cleanup require a separate Unreal reference review.
 
 ## Evidence and remaining REL-01 work
 
-The previous missing-commit blocker is resolved locally. The failed monolithic
-upload is being replaced by the prepared LFS history. This execution
+The missing-commit and oversized-upload blockers are resolved. Publication
+and local installation completed from the user terminal. This execution
 environment can read but cannot write the active .git directory, and its
 local Git process cannot resolve github.com. The connected GitHub app also
 reports read-only access. Therefore this environment can prepare and verify
@@ -79,7 +87,7 @@ blocks Git's local transport; a skip is not a passing integration result.
 
 Retain plan.json, verification.json, publish-progress.json, published.json,
 and installed.json under the prepared directory as they become available.
-Only the last two establish successful remote publication and local installation.
+The last two now record successful remote publication and local installation.
 Then verify a fresh clone with Git LFS, reproduce the native build, and record
 that exact source revision in the checkpoint. REL-01 remains incomplete until
 those checks have evidence.

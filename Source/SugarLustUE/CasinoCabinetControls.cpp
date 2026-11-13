@@ -1,6 +1,7 @@
 #include "CasinoCabinetControls.h"
 #include "SugarLustRootWidget.h"
 #include "SugarLustSlotMachine.h"
+#include "HotStreakSubsystem.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
@@ -32,12 +33,13 @@ void UCasinoCabinetControls::NativeOnInitialized()
  Spin=Button("DeckSpin","SPIN",800,365,550,365,FLinearColor(0.7f,0.4f,0.045f));UTextBlock* A=nullptr;Auto=Button("DeckAuto","AUTO: OFF",1370,365,480,365,FLinearColor(0.015f,0.18f,0.4f),&A);AutoLabel=A;
  Minus->OnClicked.AddDynamic(this,&UCasinoCabinetControls::BetDown);Plus->OnClicked.AddDynamic(this,&UCasinoCabinetControls::BetUp);Max->OnClicked.AddDynamic(this,&UCasinoCabinetControls::MaxBet);Spin->OnClicked.AddDynamic(this,&UCasinoCabinetControls::DoSpin);Auto->OnClicked.AddDynamic(this,&UCasinoCabinetControls::DoAuto);
  Status=Text("DeckStatus","",70,755,1780,65,28,Gold);
- Text("GroupEventStatus","GROUP BONUS  |  NO EVENT ACTIVE",70,865,1780,60,30,White);
- auto* Progress=WidgetTree->ConstructWidget<UProgressBar>();Progress->SetPercent(0);Progress->SetFillColorAndOpacity(Pink);Place(Progress,200,960,1520,24);
+ HotStreakLabel=Text("HotStreakDeckStatus","HOT STREAK WITH PEPPER",70,845,1300,190,25,White);
+ Button("DeckEvents","EVENTS",1410,865,440,140,FLinearColor(.4f,.02f,.12f))->OnClicked.AddDynamic(this,&UCasinoCabinetControls::OpenEvents);
 }
 void UCasinoCabinetControls::NativeTick(const FGeometry& G,float Delta)
 {
  Super::NativeTick(G,Delta);if(!Session||!Session->SlotGame)return;auto* Game=Session->SlotGame;
+ if(HotStreakLabel)HotStreakLabel->SetText(FText::FromString(Session->GetHotStreak()?Session->GetHotStreak()->GetHudText():TEXT("HOT STREAK | OPEN EVENTS")));
  if(Session->bShowingNeonNightsPreview)
  {
   Title->SetText(FText::FromString(TEXT("NEON NIGHTS")));
@@ -61,5 +63,6 @@ void UCasinoCabinetControls::BetUp(){if(Session&&Plus->GetIsEnabled()){if(Sessio
 void UCasinoCabinetControls::MaxBet(){if(Session&&Max->GetIsEnabled()){if(Session->bShowingNeonNightsPreview)Session->HandleNeonMaxBet();else Session->HandleMaxBet();}}
 void UCasinoCabinetControls::DoSpin(){if(Session&&Spin->GetIsEnabled()){if(Session->bShowingNeonNightsPreview)Session->HandleNeonSpin();else Session->HandleSpin();}}
 void UCasinoCabinetControls::DoAuto(){if(Session&&Auto->GetIsEnabled()){if(Session->bShowingNeonNightsPreview)Session->HandleNeonAutoSpin();else Session->HandleAutoSpin();}}
+void UCasinoCabinetControls::OpenEvents(){if(Session)Session->HandleOpenHotStreak();}
 
 FString UCasinoCabinetControls::GetDisplayedWager() const { return Wager ? Wager->GetText().ToString() : FString(); }

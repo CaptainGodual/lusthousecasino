@@ -1,16 +1,16 @@
 # Lust House Casino master release board
 
-Reviewed 2026-11-11T22:19:48.454Z. This is the single game implementation board. Edit systems.json and regenerate this view; keep Character Studio and Character Production as linked specialist records.
+Reviewed 2026-11-11T23:42:22.170Z. This is the single game implementation board. Edit systems.json and regenerate this view; keep Character Studio and Character Production as linked specialist records.
 
 **Full release: NOT READY. Focused checkpoint: NOT READY.**
 
-Inventory: 35 systems; 4 working, 15 incomplete, 8 planned, 8 blocked. Working always includes an evidence level and does not automatically mean release accepted.
+Inventory: 35 systems; 3 working, 17 incomplete, 7 planned, 8 blocked. Working always includes an evidence level and does not automatically mean release accepted.
 
 ## Active baseline
 
 - Project: SugarLustUE.uproject; Unreal 5.8; application 0.0.2.
-- Current runtime source fingerprint: 697dee2a39fc7f870a0474097ac555127de6443aaf68bb73a8dee3cb474b623e.
-- Source-control identity: Resolved source commit 6cf1c73f97bcc0771c3d7b93cc6231c0291e7458
+- Current runtime source fingerprint: 6979603885715a556921e3e6889dad767b188145981ee973395fc010f0d0bfad.
+- Source-control identity: Resolved source commit aa4b4c970d1c2156f3e2ca3b6d7f5c87a501d724
 - Preserved pre-change manifest: [Saved/ReleaseAudit/2026-11-11/baseline-source-manifest.json](../../Saved/ReleaseAudit/2026-11-11/baseline-source-manifest.json).
 - Machine-readable current checks: [Saved/ReleaseAudit/current.json](../../Saved/ReleaseAudit/current.json).
 
@@ -26,18 +26,20 @@ Inventory: 35 systems; 4 working, 15 incomplete, 8 planned, 8 blocked. Working a
 | Check | Result | Evidence |
 | --- | --- | --- |
 | project-config | passed | Engine 5.8; configured versions 0.0.2, 0.0.2, 0.0.2, 0.0.2 [SugarLustUE.uproject](../../SugarLustUE.uproject) [Config/DefaultGame.ini](../../Config/DefaultGame.ini) [Config/DefaultEngine.ini](../../Config/DefaultEngine.ini) |
-| git-head | passed | Resolved source commit 6cf1c73f97bcc0771c3d7b93cc6231c0291e7458 [Saved/ReleaseAudit/2026-11-11/baseline-source-manifest.json](../../Saved/ReleaseAudit/2026-11-11/baseline-source-manifest.json) |
-| runtime-bundle | passed | Runtime bundle verified. [Saved/ReleaseAudit/run-2026-11-11T20-26-06-179Z/runtime-bundle.log](../../Saved/ReleaseAudit/run-2026-11-11T20-26-06-179Z/runtime-bundle.log) |
-| settlement | passed | PASS new players use server defaults, never a supplied seed PASS frozen imports cannot be overwritten and migrated accounts cannot be reseeded 32 transactional economy integration tests passed. [Saved/ReleaseAudit/run-2026-11-11T20-26-06-179Z/settlement.log](../../Saved/ReleaseAudit/run-2026-11-11T20-26-06-179Z/settlement.log) |
-| free-spins | passed | PASS: already-settled PlayFab version-3 responses recover without another debit, credit or RPC. PASS: Neon Muse reel frequency, 3/4/5-reel payouts, Wild substitution and losing combinations. PASS: Neon rules-4 receipts recover under rules 5 without reroll, double pay or duplicate free-spin consumption. [Saved/ReleaseAudit/run-2026-11-11T20-26-06-179Z/free-spins.log](../../Saved/ReleaseAudit/run-2026-11-11T20-26-06-179Z/free-spins.log) |
-| mega-pot | passed | PASS Mega and Sugar transactions preserve one shared wallet PASS Mega RTP is exactly stake-linear across the minimum and maximum bet 16 Mega Pot transactional integration tests passed. [Saved/ReleaseAudit/run-2026-11-11T20-26-06-179Z/mega-pot.log](../../Saved/ReleaseAudit/run-2026-11-11T20-26-06-179Z/mega-pot.log) |
-| setup-workflow | passed | PASS Live handler failure blocks enabling and redacts credentials and gateway URLs PASS missing key fails before any requests 6 setup workflow tests passed. No live requests made. [Saved/ReleaseAudit/run-2026-11-11T20-26-06-179Z/setup-workflow.log](../../Saved/ReleaseAudit/run-2026-11-11T20-26-06-179Z/setup-workflow.log) |
-| lustvend | passed | PASS earning storage failure rolls back entire spin and grant PASS client cannot submit activity or arbitrary gem credits 19 LUSTVEND Nakama/PlayFab tests passed. [Saved/ReleaseAudit/run-2026-11-11T20-26-06-179Z/lustvend.log](../../Saved/ReleaseAudit/run-2026-11-11T20-26-06-179Z/lustvend.log) |
-| release-policy | passed | PASS duplicate IDs and cyclic dependencies are rejected PASS unknown dependencies and invalid completed states are rejected 13 release readiness policy tests passed. [Saved/ReleaseAudit/run-2026-11-11T20-26-06-179Z/release-policy.log](../../Saved/ReleaseAudit/run-2026-11-11T20-26-06-179Z/release-policy.log) |
-| lustvend-python (optional demo) | blocked | Ran 11 tests in 1.033s  FAILED (errors=1) [Saved/ReleaseAudit/run-2026-11-11T20-26-06-179Z/lustvend-python.log](../../Saved/ReleaseAudit/run-2026-11-11T20-26-06-179Z/lustvend-python.log) |
-| editor-build | passed | Current Unreal Editor target compiled successfully [Saved/ReleaseAudit/native-current/EditorBuild-evidence.json](../../Saved/ReleaseAudit/native-current/EditorBuild-evidence.json) [Saved/ReleaseAudit/native-current/editor-build.log](../../Saved/ReleaseAudit/native-current/editor-build.log) [Saved/ReleaseAudit/native-current/editor-build-console.log](../../Saved/ReleaseAudit/native-current/editor-build-console.log) |
-| editor-automation | blocked | Editor returned without a fresh nonempty automation report; execution remains unverified [Saved/ReleaseAudit/native-current/EditorTests-evidence.json](../../Saved/ReleaseAudit/native-current/EditorTests-evidence.json) |
-| windows-package | blocked | Shipping compilation and the cook command completed; staging is blocked by denied write to the installed engine Intermediate/Build/BuildCookRun/StagedBuild_SugarLustUE.ini. No complete new archive exists. [Saved/ReleaseAudit/native-current/WindowsCheckpoint-evidence.json](../../Saved/ReleaseAudit/native-current/WindowsCheckpoint-evidence.json) [Saved/ReleaseAudit/native-current/windows-package-console.log](../../Saved/ReleaseAudit/native-current/windows-package-console.log) [Saved/ReleaseAudit/native-current/UAT/Log.txt](../../Saved/ReleaseAudit/native-current/UAT/Log.txt) |
+| git-head | passed | Resolved source commit aa4b4c970d1c2156f3e2ca3b6d7f5c87a501d724 [Saved/ReleaseAudit/2026-11-11/baseline-source-manifest.json](../../Saved/ReleaseAudit/2026-11-11/baseline-source-manifest.json) |
+| runtime-bundle | passed | Runtime bundle verified. [Saved/ReleaseAudit/run-2026-11-11T23-42-22-170Z/runtime-bundle.log](../../Saved/ReleaseAudit/run-2026-11-11T23-42-22-170Z/runtime-bundle.log) |
+| settlement | passed | PASS new players use server defaults, never a supplied seed PASS frozen imports cannot be overwritten and migrated accounts cannot be reseeded 32 transactional economy integration tests passed. [Saved/ReleaseAudit/run-2026-11-11T23-42-22-170Z/settlement.log](../../Saved/ReleaseAudit/run-2026-11-11T23-42-22-170Z/settlement.log) |
+| free-spins | passed | PASS: already-settled PlayFab version-3 responses recover without another debit, credit or RPC. PASS: Neon Muse reel frequency, 3/4/5-reel payouts, Wild substitution and losing combinations. PASS: Neon rules-4 receipts recover under rules 5 without reroll, double pay or duplicate free-spin consumption. [Saved/ReleaseAudit/run-2026-11-11T23-42-22-170Z/free-spins.log](../../Saved/ReleaseAudit/run-2026-11-11T23-42-22-170Z/free-spins.log) |
+| mega-pot | passed | PASS Mega and Sugar transactions preserve one shared wallet PASS Mega RTP is exactly stake-linear across the minimum and maximum bet 16 Mega Pot transactional integration tests passed. [Saved/ReleaseAudit/run-2026-11-11T23-42-22-170Z/mega-pot.log](../../Saved/ReleaseAudit/run-2026-11-11T23-42-22-170Z/mega-pot.log) |
+| setup-workflow | passed | PASS Live handler failure blocks enabling and redacts credentials and gateway URLs PASS missing key fails before any requests 6 setup workflow tests passed. No live requests made. [Saved/ReleaseAudit/run-2026-11-11T23-42-22-170Z/setup-workflow.log](../../Saved/ReleaseAudit/run-2026-11-11T23-42-22-170Z/setup-workflow.log) |
+| lustvend | passed | PASS earning storage failure rolls back entire spin and grant PASS client cannot submit activity or arbitrary gem credits 19 LUSTVEND Nakama/PlayFab tests passed. [Saved/ReleaseAudit/run-2026-11-11T23-42-22-170Z/lustvend.log](../../Saved/ReleaseAudit/run-2026-11-11T23-42-22-170Z/lustvend.log) |
+| release-policy | passed | PASS duplicate IDs and cyclic dependencies are rejected PASS unknown dependencies and invalid completed states are rejected 14 release readiness policy tests passed. [Saved/ReleaseAudit/run-2026-11-11T23-42-22-170Z/release-policy.log](../../Saved/ReleaseAudit/run-2026-11-11T23-42-22-170Z/release-policy.log) |
+| native-policy | passed | PASS the CLI cannot invent exit zero when the native exit code is missing PASS malformed fresh report JSON is rejected by the CLI 13 native verification policy tests passed. [Saved/ReleaseAudit/run-2026-11-11T23-42-22-170Z/native-policy.log](../../Saved/ReleaseAudit/run-2026-11-11T23-42-22-170Z/native-policy.log) |
+| lustvend-python (optional demo) | blocked | Ran 11 tests in 1.063s  FAILED (errors=1) [Saved/ReleaseAudit/run-2026-11-11T23-42-22-170Z/lustvend-python.log](../../Saved/ReleaseAudit/run-2026-11-11T23-42-22-170Z/lustvend-python.log) |
+| editor-build | passed | SugarLustUEEditor Win64 Development: Native target build succeeded. [Saved/ReleaseAudit/REL02-2026-11-11/native-current/EditorBuild-evidence.json](../../Saved/ReleaseAudit/REL02-2026-11-11/native-current/EditorBuild-evidence.json) [Saved/ReleaseAudit/REL02-2026-11-11/native-current/editor-build.log](../../Saved/ReleaseAudit/REL02-2026-11-11/native-current/editor-build.log) [Saved/ReleaseAudit/REL02-2026-11-11/native-current/editor-build-console.log](../../Saved/ReleaseAudit/REL02-2026-11-11/native-current/editor-build-console.log) [Saved/ReleaseAudit/REL02-2026-11-11/native-current/EditorBuild-assessment.json](../../Saved/ReleaseAudit/REL02-2026-11-11/native-current/EditorBuild-assessment.json) [Saved/ReleaseAudit/REL02-2026-11-11/native-current/BuildConfiguration-EditorBuild.xml](../../Saved/ReleaseAudit/REL02-2026-11-11/native-current/BuildConfiguration-EditorBuild.xml) |
+| shipping-build | passed | SugarLustUE Win64 Shipping: Native target build succeeded; selected compiler is allowed but not preferred. [Saved/ReleaseAudit/REL02-2026-11-11/native-current/ShippingBuild-evidence.json](../../Saved/ReleaseAudit/REL02-2026-11-11/native-current/ShippingBuild-evidence.json) [Saved/ReleaseAudit/REL02-2026-11-11/native-current/shipping-build.log](../../Saved/ReleaseAudit/REL02-2026-11-11/native-current/shipping-build.log) [Saved/ReleaseAudit/REL02-2026-11-11/native-current/shipping-build-console.log](../../Saved/ReleaseAudit/REL02-2026-11-11/native-current/shipping-build-console.log) [Saved/ReleaseAudit/REL02-2026-11-11/native-current/ShippingBuild-assessment.json](../../Saved/ReleaseAudit/REL02-2026-11-11/native-current/ShippingBuild-assessment.json) [Saved/ReleaseAudit/REL02-2026-11-11/native-current/BuildConfiguration-ShippingBuild.xml](../../Saved/ReleaseAudit/REL02-2026-11-11/native-current/BuildConfiguration-ShippingBuild.xml) |
+| editor-automation | blocked | Unreal did not produce a fresh automation report; an exit code of zero does not verify test execution. [Saved/ReleaseAudit/REL02-2026-11-11/native-current/EditorTests-evidence.json](../../Saved/ReleaseAudit/REL02-2026-11-11/native-current/EditorTests-evidence.json) [Saved/ReleaseAudit/REL02-2026-11-11/native-current/EditorTests-assessment.json](../../Saved/ReleaseAudit/REL02-2026-11-11/native-current/EditorTests-assessment.json) |
+| windows-package | not_run | Run Verify-Project.ps1 -Mode WindowsCheckpoint and import its evidence.  |
 
 An Editor process exiting with code zero without a nonempty test report remains unverified. Isolated backend tests use fake accounts and storage. No live wagers or deployment changes are performed by this audit.
 
@@ -45,8 +47,8 @@ An Editor process exiting with code zero without a nonempty test report remains 
 
 | ID | System | Status | Column | Priority | Scope | Next action |
 | --- | --- | --- | --- | --- | --- | --- |
-| [REL-01](#rel-01) | Project identity and source control | blocked | In Progress | P0 | checkpoint | Run Tools/Release/Publish-SourceChunks.ps1 in a normal project terminal to upload each prepared commit, resume from the remote head, and install the verified LFS baseline; then clone and rebuild. |
-| [REL-02](#rel-02) | Unreal native build | working | Verify | P0 | checkpoint | Use Verify-Project.ps1 to retain reproducible build evidence and execute the complete Editor automation report. |
+| [REL-01](#rel-01) | Project identity and source control | incomplete | Verify | P0 | checkpoint | Verify a fresh origin/master clone with Git LFS, rebuild the native target from that checkout, and record the exact source revision and logs in source-baseline acceptance. |
+| [REL-02](#rel-02) | Unreal native build | blocked | Verify | P0 | checkpoint | Run Tools/Release/Verify-NativeRelease.ps1 in a normal project PowerShell terminal to execute all 11 required tests and refresh native evidence. Review its report before closing REL-02. |
 | [REL-03](#rel-03) | Windows packaged build and launch | blocked | Ready | P0 | checkpoint | Complete the checkpoint in an environment permitted to stage with the installed Unreal engine, then verify the exact packaged executable with fresh and returning accounts. |
 | [REL-04](#rel-04) | Guest login and profile persistence | incomplete | Ready | P0 | checkpoint | Verify login failure states, save permissions, returning identity, profile load, and restart with a dedicated account. |
 | [REL-05](#rel-05) | Authoritative coins and settlement | working | Verify | P0 | checkpoint | Verify deployed runtime and bridge hashes, then run dedicated-account replay, contention, and response-loss checks in staging. |
@@ -66,7 +68,7 @@ An Editor process exiting with code zero without a nonempty test report remains 
 | [REL-19](#rel-19) | Mega Lust Pot online game | blocked | Ready | P2 | expansion | Verify the prepared versioned bundle, deploy through controlled staging access, and test sync, wager replay, feature continuation and reconnect. |
 | [REL-20](#rel-20) | Jester character production and deployment | incomplete | Ready | P1 | checkpoint | Complete one stable Jester record, inspect UVs and deformation, texture it, and connect the approved export to the real menu or scene. |
 | [REL-21](#rel-21) | Time of day character presentation | planned | Backlog | P1 | checkpoint | Implement two configurable local-time windows, development preview, event-host precedence and asset fallback at safe menu transitions. |
-| [REL-22](#rel-22) | Hot Streak with Pepper event | planned | Backlog | P1 | checkpoint | Implement the Sugar Lust slice: three paid wins, persistent Heat, one panel, queued Pepper reaction and an idempotent supported Mild claim. |
+| [REL-22](#rel-22) | Hot Streak with Pepper event | incomplete | Ready | P1 | checkpoint | Stage the matching runtime and bridge, enable a separate internal Sugar Lust event, and verify a three-win sequence, Mild title claim/equip, response-loss recovery and packaged presentation. |
 | [REL-23](#rel-23) | Audio settings scaling and accessibility | incomplete | Ready | P1 | checkpoint | Verify settings persistence, mute behavior, payout priority, phone safe areas and every release-critical input path. |
 | [REL-24](#rel-24) | Updater versioning and public distribution | blocked | Ready | P0 | checkpoint | Prepare a manifest from the accepted artifact/version and publish it only after those downloads exist and the release is approved. |
 | [REL-25](#rel-25) | Android signed package and device behavior | blocked | Ready | P1 | expansion | Build with the retained signing identity and test the exact APK on the Motorola Edge 2024 without erasing an unrecovered guest account. |
@@ -96,23 +98,21 @@ Only one implementation task and one bounded character/art task should be In Pro
 
 ## REL-01
 
-**Project identity and source control** — blocked; P0; In Progress.
+**Project identity and source control** — incomplete; P0; Verify.
 
-Evidence level: Local main now resolves to 6cf1c73f97bcc0771c3d7b93cc6231c0291e7458, containing 2,371 files across two local commits. Separate source-master upload tooling preserves both original commits and prepares an independently verified Git LFS history in smaller batches..
+Evidence level: All 14 source commits were published to origin/master and installed locally at aa4b4c970d1c2156f3e2ca3b6d7f5c87a501d724. Local index matches 2,374 prepared paths; 2,068 LFS asset objects passed installation integrity checks. Original source commits remain on refs/heads/backup/pre-lfs-6cf1c73f97bc..
 
-Source evidence: [SugarLustUE.uproject](../../SugarLustUE.uproject), [Source/SugarLustUE.Target.cs](../../Source/SugarLustUE.Target.cs), [Docs/Release/observations.json](../../Docs/Release/observations.json), [Docs/Release/SOURCE_UPLOAD.md](../../Docs/Release/SOURCE_UPLOAD.md), [Tools/Release/chunked-source-upload.js](../../Tools/Release/chunked-source-upload.js), [Tools/Release/chunked-source-upload.test.js](../../Tools/Release/chunked-source-upload.test.js).
+Source evidence: [SugarLustUE.uproject](../../SugarLustUE.uproject), [Source/SugarLustUE.Target.cs](../../Source/SugarLustUE.Target.cs), [Docs/Release/observations.json](../../Docs/Release/observations.json), [Docs/Release/SOURCE_UPLOAD.md](../../Docs/Release/SOURCE_UPLOAD.md), [Tools/Release/chunked-source-upload.js](../../Tools/Release/chunked-source-upload.js), [Tools/Release/chunked-source-upload.test.js](../../Tools/Release/chunked-source-upload.test.js), [Saved/ReleaseAudit/REL01-2026-11-11/chunked-upload/published.json](../../Saved/ReleaseAudit/REL01-2026-11-11/chunked-upload/published.json), [Saved/ReleaseAudit/REL01-2026-11-11/chunked-upload/installed.json](../../Saved/ReleaseAudit/REL01-2026-11-11/chunked-upload/installed.json).
 
 Dependencies: none.
 
-Current constraint: The source snapshot contains about 5.55 GiB and seven raw Unreal packages above 100 MiB. The active .git is read-only to this session, local Git cannot resolve github.com, and the connected app reports no push permission. Remote publication, installation of source master, and a fresh LFS clone/build still need evidence.
+Current constraint: The upload and Git metadata blockers are resolved. A fresh independent clone with downloaded LFS content and a native rebuild has not yet been verified; source-baseline release acceptance remains pending.
 
-Next action: Run Tools/Release/Publish-SourceChunks.ps1 in a normal project terminal to upload each prepared commit, resume from the remote head, and install the verified LFS baseline; then clone and rebuild.
+Next action: Verify a fresh origin/master clone with Git LFS, rebuild the native target from that checkout, and record the exact source revision and logs in source-baseline acceptance.
 
-- [ ] Preserve original root 7d5c2fe525ad4dcc938842e8aab7c69e267d040c, latest input 6cf1c73f97bcc0771c3d7b93cc6231c0291e7458, and the earlier source/asset manifests.
-- [ ] Verify the prepared chunk history and official LFS integrity report; keep generated outputs and local saves excluded.
-- [ ] Publish one commit at a time to origin/master, retaining origin/main for updater distribution.
-- [ ] After verified publication, select local master with the prepared LFS history; retain original local main and backup/pre-lfs-6cf1c73f97bc.
-- [ ] Verify an independent LFS clone, reproduce the native build, and record the final remote commit in the release evidence.
+- [ ] Retain the published.json and installed.json receipts and the original local backup branch.
+- [ ] Clone origin/master independently, download its LFS content, and verify the source and asset inventory against the retained manifest.
+- [ ] Rebuild the native target from that checkout and record matching commit, engine version, source fingerprint, and build evidence.
 
 Acceptance: Project path, engine version, branch, exact commit, and source manifest agree; clean rebuild from a second checkout reproduces the candidate.
 
@@ -120,21 +120,22 @@ Required acceptance record: source-baseline. Release acceptance: pending.
 
 ## REL-02
 
-**Unreal native build** — working; P0; Verify.
+**Unreal native build** — blocked; P0; Verify.
 
-Evidence level: Current Unreal 5.8.4 Editor Development target, including the immutable spin retry fix and new test, compiled successfully on November 11 with project-local UBA storage..
+Evidence level: Current Unreal 5.8.4 Editor Development and standalone Win64 Shipping target checks succeeded on the working source fingerprint 6979603885715a556921e3e6889dad767b188145981ee973395fc010f0d0bfad. Both targets were up to date. Required automation inventory contains 11 tests; 13 native evidence policy tests and 14 readiness policy tests pass. Runtime automation has not executed in this session..
 
-Source evidence: [Source/SugarLustUE/SugarLustUE.Build.cs](../../Source/SugarLustUE/SugarLustUE.Build.cs), [Source/SugarLustUEEditor.Target.cs](../../Source/SugarLustUEEditor.Target.cs).
+Source evidence: [Source/SugarLustUE/SugarLustUE.Build.cs](../../Source/SugarLustUE/SugarLustUE.Build.cs), [Source/SugarLustUEEditor.Target.cs](../../Source/SugarLustUEEditor.Target.cs), [Source/SugarLustUE.Target.cs](../../Source/SugarLustUE.Target.cs), [Config/UnrealBuildTool/BuildConfiguration.xml](../../Config/UnrealBuildTool/BuildConfiguration.xml), [Tools/Release/Verify-Project.ps1](../../Tools/Release/Verify-Project.ps1), [Tools/Release/Verify-NativeRelease.ps1](../../Tools/Release/Verify-NativeRelease.ps1), [Tools/Release/inspect-native-evidence.js](../../Tools/Release/inspect-native-evidence.js), [Docs/Release/NATIVE_VERIFICATION.md](../../Docs/Release/NATIVE_VERIFICATION.md), [Saved/ReleaseAudit/REL02-2026-11-11/native-current/EditorBuild-evidence.json](../../Saved/ReleaseAudit/REL02-2026-11-11/native-current/EditorBuild-evidence.json), [Saved/ReleaseAudit/REL02-2026-11-11/native-current/ShippingBuild-evidence.json](../../Saved/ReleaseAudit/REL02-2026-11-11/native-current/ShippingBuild-evidence.json), [Saved/ReleaseAudit/REL02-2026-11-11/native-current/EditorTests-evidence.json](../../Saved/ReleaseAudit/REL02-2026-11-11/native-current/EditorTests-evidence.json), [Saved/ReleaseAudit/REL02-2026-11-11/native-current/toolchain-review.json](../../Saved/ReleaseAudit/REL02-2026-11-11/native-current/toolchain-review.json).
 
 Dependencies: REL-01.
 
-Current constraint: Compiler 14.51 is newer than the engine's preferred 14.50; packaged Shipping verification remains separate.
+Current constraint: Editor startup inside this execution environment fails in Unreal machine-ID storage before logging initializes; no fresh automation report is created, despite exit zero. A debugger captured SetStoredValue -> LogfImpl during CSV profiler initialization. MSVC 14.51.36260 is allowed by the installed engine policy but is not preferred; its warning remains recorded.
 
-Next action: Use Verify-Project.ps1 to retain reproducible build evidence and execute the complete Editor automation report.
+Next action: Run Tools/Release/Verify-NativeRelease.ps1 in a normal project PowerShell terminal to execute all 11 required tests and refresh native evidence. Review its report before closing REL-02.
 
-- [ ] Keep build caches and logs under Saved/ReleaseAudit rather than ProgramData.
-- [ ] Require a real automation report, not only process exit code zero.
-- [ ] Record warning review and compile Shipping through checkpoint packaging.
+- [ ] Retain current Editor/Shipping receipts, the exact SDK configuration, compiler review, and the startup debugger diagnostic.
+- [ ] Run the native verification command outside the restricted execution session and require fresh successful records for every discovered project test.
+- [ ] Review the visible nonpreferred-toolchain warning; optionally select a serviced preferred compiler, rerun verification, and retain the real versions.
+- [ ] Record final native/toolchain acceptance against the matching source and packaged candidate when REL-03 supplies that artifact.
 
 Acceptance: Current source builds successfully, required automation tests execute, and toolchain versions are recorded.
 
@@ -560,17 +561,17 @@ Required acceptance record: presentation-windows. Release acceptance: pending.
 
 ## REL-22
 
-**Hot Streak with Pepper event** — planned; P1; Backlog.
+**Hot Streak with Pepper event** - incomplete; P1; Ready.
 
-Evidence level: Detailed November 9 design exists; no integrated Pepper or HotStreak runtime was found.
+Evidence level: Local mechanics, atomic Heat and title claims, account subsystem, shared event panel, slot/cabinet HUDs and queued text reactions implemented; 30 event backend tests and 12 Unreal automation tests passed; staging acceptance remains pending.
 
-Source evidence: [Backend/NakamaRuntime/economy-domain.js](../../Backend/NakamaRuntime/economy-domain.js), [Source/SugarLustUE/SugarLustRootWidget.cpp](../../Source/SugarLustUE/SugarLustRootWidget.cpp).
+Source evidence: [Backend/NakamaRuntime/hot-streak-rules.js](../../Backend/NakamaRuntime/hot-streak-rules.js), [Backend/NakamaRuntime/economy-domain.js](../../Backend/NakamaRuntime/economy-domain.js), [Source/SugarLustUE/HotStreakSubsystem.cpp](../../Source/SugarLustUE/HotStreakSubsystem.cpp), [Source/SugarLustUE/SugarLustRootWidget.cpp](../../Source/SugarLustUE/SugarLustRootWidget.cpp), [Docs/HOT_STREAK_IMPLEMENTATION.md](../HOT_STREAK_IMPLEMENTATION.md).
 
 Dependencies: REL-05, REL-06, REL-14, REL-16.
 
-Current constraint: Rules need frozen configuration, supported Mild reward content, server grant path and approved placeholder presentation.
+Current constraint: Backend and disabled internal configuration require staging deployment and real storage/reconnect acceptance. Pepper portraits and wearable rewards remain pending.
 
-Next action: Implement the Sugar Lust slice: three paid wins, persistent Heat, one panel, queued Pepper reaction and an idempotent supported Mild claim.
+Next action: Stage the matching runtime and bridge, enable a separate internal Sugar Lust event, and verify a three-win sequence, Mild title claim/equip, response-loss recovery and packaged presentation.
 
 - [ ] Use the existing implementation plan; add atomic progress and permanent claim receipts to authoritative settlement.
 - [ ] Choose a supported owned media or presentation reward before offering an unimplemented wearable.

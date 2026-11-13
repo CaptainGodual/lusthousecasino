@@ -40,7 +40,7 @@ function fingerprint(root) {
     for (const entry of fs.readdirSync(dir, {withFileTypes:true})) {
       const name = path.join(relative, entry.name);
       if (entry.isDirectory()) walk(name, includeAll);
-      else if ((includeAll || /\.(cpp|h|cs|js|ini)$/.test(name)) && !/^User.*\.ini$/i.test(entry.name)) files.push(name);
+      else if ((includeAll || /\.(cpp|h|cs|js|ini|xml)$/.test(name)) && !/^User.*\.ini$/i.test(entry.name)) files.push(name);
     }
   }
   for (const dir of ['Source', 'Backend/NakamaRuntime', 'Backend/PlayFabCloudScript', 'Config']) walk(dir);

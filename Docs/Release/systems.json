@@ -13,33 +13,33 @@
     {
       "id": "REL-01",
       "name": "Project identity and source control",
-      "status": "blocked",
+      "status": "incomplete",
       "priority": "P0",
-      "column": "In Progress",
+      "column": "Verify",
       "scope": "checkpoint",
-      "verifiedScope": "Local main now resolves to 6cf1c73f97bcc0771c3d7b93cc6231c0291e7458, containing 2,371 files across two local commits. Separate source-master upload tooling preserves both original commits and prepares an independently verified Git LFS history in smaller batches.",
+      "verifiedScope": "All 14 source commits were published to origin/master and installed locally at aa4b4c970d1c2156f3e2ca3b6d7f5c87a501d724. Local index matches 2,374 prepared paths; 2,068 LFS asset objects passed installation integrity checks. Original source commits remain on refs/heads/backup/pre-lfs-6cf1c73f97bc.",
       "sources": [
         "SugarLustUE.uproject",
         "Source/SugarLustUE.Target.cs",
         "Docs/Release/observations.json",
         "Docs/Release/SOURCE_UPLOAD.md",
         "Tools/Release/chunked-source-upload.js",
-        "Tools/Release/chunked-source-upload.test.js"
+        "Tools/Release/chunked-source-upload.test.js",
+        "Saved/ReleaseAudit/REL01-2026-11-11/chunked-upload/published.json",
+        "Saved/ReleaseAudit/REL01-2026-11-11/chunked-upload/installed.json"
       ],
       "checks": [
         "project-config",
         "git-head"
       ],
       "dependsOn": [],
-      "blocker": "The source snapshot contains about 5.55 GiB and seven raw Unreal packages above 100 MiB. The active .git is read-only to this session, local Git cannot resolve github.com, and the connected app reports no push permission. Remote publication, installation of source master, and a fresh LFS clone/build still need evidence.",
-      "nextAction": "Run Tools/Release/Publish-SourceChunks.ps1 in a normal project terminal to upload each prepared commit, resume from the remote head, and install the verified LFS baseline; then clone and rebuild.",
+      "blocker": "The upload and Git metadata blockers are resolved. A fresh independent clone with downloaded LFS content and a native rebuild has not yet been verified; source-baseline release acceptance remains pending.",
+      "nextAction": "Verify a fresh origin/master clone with Git LFS, rebuild the native target from that checkout, and record the exact source revision and logs in source-baseline acceptance.",
       "acceptance": "Project path, engine version, branch, exact commit, and source manifest agree; clean rebuild from a second checkout reproduces the candidate.",
       "plan": [
-        "Preserve original root 7d5c2fe525ad4dcc938842e8aab7c69e267d040c, latest input 6cf1c73f97bcc0771c3d7b93cc6231c0291e7458, and the earlier source/asset manifests.",
-        "Verify the prepared chunk history and official LFS integrity report; keep generated outputs and local saves excluded.",
-        "Publish one commit at a time to origin/master, retaining origin/main for updater distribution.",
-        "After verified publication, select local master with the prepared LFS history; retain original local main and backup/pre-lfs-6cf1c73f97bc.",
-        "Verify an independent LFS clone, reproduce the native build, and record the final remote commit in the release evidence."
+        "Retain the published.json and installed.json receipts and the original local backup branch.",
+        "Clone origin/master independently, download its LFS content, and verify the source and asset inventory against the retained manifest.",
+        "Rebuild the native target from that checkout and record matching commit, engine version, source fingerprint, and build evidence."
       ],
       "signoffs": [
         "source-baseline"
@@ -48,28 +48,42 @@
     {
       "id": "REL-02",
       "name": "Unreal native build",
-      "status": "working",
+      "status": "blocked",
       "priority": "P0",
       "column": "Verify",
       "scope": "checkpoint",
-      "verifiedScope": "Current Unreal 5.8.4 Editor Development target, including the immutable spin retry fix and new test, compiled successfully on November 11 with project-local UBA storage.",
+      "verifiedScope": "Current Unreal 5.8.4 Editor Development and standalone Win64 Shipping target checks succeeded on the working source fingerprint 6979603885715a556921e3e6889dad767b188145981ee973395fc010f0d0bfad. Both targets were up to date. Required automation inventory contains 11 tests; 13 native evidence policy tests and 14 readiness policy tests pass. Runtime automation has not executed in this session.",
       "sources": [
         "Source/SugarLustUE/SugarLustUE.Build.cs",
-        "Source/SugarLustUEEditor.Target.cs"
+        "Source/SugarLustUEEditor.Target.cs",
+        "Source/SugarLustUE.Target.cs",
+        "Config/UnrealBuildTool/BuildConfiguration.xml",
+        "Tools/Release/Verify-Project.ps1",
+        "Tools/Release/Verify-NativeRelease.ps1",
+        "Tools/Release/inspect-native-evidence.js",
+        "Docs/Release/NATIVE_VERIFICATION.md",
+        "Saved/ReleaseAudit/REL02-2026-11-11/native-current/EditorBuild-evidence.json",
+        "Saved/ReleaseAudit/REL02-2026-11-11/native-current/ShippingBuild-evidence.json",
+        "Saved/ReleaseAudit/REL02-2026-11-11/native-current/EditorTests-evidence.json",
+        "Saved/ReleaseAudit/REL02-2026-11-11/native-current/toolchain-review.json"
       ],
       "checks": [
-        "editor-build"
+        "editor-build",
+        "shipping-build",
+        "editor-automation",
+        "native-policy"
       ],
       "dependsOn": [
         "REL-01"
       ],
-      "blocker": "Compiler 14.51 is newer than the engine's preferred 14.50; packaged Shipping verification remains separate.",
-      "nextAction": "Use Verify-Project.ps1 to retain reproducible build evidence and execute the complete Editor automation report.",
+      "blocker": "Editor startup inside this execution environment fails in Unreal machine-ID storage before logging initializes; no fresh automation report is created, despite exit zero. A debugger captured SetStoredValue -> LogfImpl during CSV profiler initialization. MSVC 14.51.36260 is allowed by the installed engine policy but is not preferred; its warning remains recorded.",
+      "nextAction": "Run Tools/Release/Verify-NativeRelease.ps1 in a normal project PowerShell terminal to execute all 11 required tests and refresh native evidence. Review its report before closing REL-02.",
       "acceptance": "Current source builds successfully, required automation tests execute, and toolchain versions are recorded.",
       "plan": [
-        "Keep build caches and logs under Saved/ReleaseAudit rather than ProgramData.",
-        "Require a real automation report, not only process exit code zero.",
-        "Record warning review and compile Shipping through checkpoint packaging."
+        "Retain current Editor/Shipping receipts, the exact SDK configuration, compiler review, and the startup debugger diagnostic.",
+        "Run the native verification command outside the restricted execution session and require fresh successful records for every discovered project test.",
+        "Review the visible nonpreferred-toolchain warning; optionally select a serviced preferred compiler, rerun verification, and retain the real versions.",
+        "Record final native/toolchain acceptance against the matching source and packaged candidate when REL-03 supplies that artifact."
       ],
       "signoffs": [
         "toolchain-review"
@@ -680,14 +694,17 @@
     {
       "id": "REL-22",
       "name": "Hot Streak with Pepper event",
-      "status": "planned",
+      "status": "incomplete",
       "priority": "P1",
-      "column": "Backlog",
+      "column": "Ready",
       "scope": "checkpoint",
-      "verifiedScope": "Detailed November 9 design exists; no integrated Pepper or HotStreak runtime was found",
+      "verifiedScope": "Local mechanics, atomic Heat and title claims, account subsystem, shared event panel, slot/cabinet HUDs and queued text reactions implemented; 30 event backend tests and 12 Unreal automation tests passed; staging acceptance remains pending",
       "sources": [
+        "Backend/NakamaRuntime/hot-streak-rules.js",
         "Backend/NakamaRuntime/economy-domain.js",
-        "Source/SugarLustUE/SugarLustRootWidget.cpp"
+        "Source/SugarLustUE/HotStreakSubsystem.cpp",
+        "Source/SugarLustUE/SugarLustRootWidget.cpp",
+        "Docs/HOT_STREAK_IMPLEMENTATION.md"
       ],
       "checks": [],
       "dependsOn": [
@@ -696,8 +713,8 @@
         "REL-14",
         "REL-16"
       ],
-      "blocker": "Rules need frozen configuration, supported Mild reward content, server grant path and approved placeholder presentation.",
-      "nextAction": "Implement the Sugar Lust slice: three paid wins, persistent Heat, one panel, queued Pepper reaction and an idempotent supported Mild claim.",
+      "blocker": "Backend and disabled internal configuration require staging deployment and real storage/reconnect acceptance. Pepper portraits and wearable rewards remain pending.",
+      "nextAction": "Stage the matching runtime and bridge, enable a separate internal Sugar Lust event, and verify a three-win sequence, Mild title claim/equip, response-loss recovery and packaged presentation.",
       "acceptance": "W W W W L yields Heat 0 0 1 2 2; free and bonus rounds freeze progress; restart/replay/concurrency and deadlines never duplicate rewards.",
       "plan": [
         "Use the existing implementation plan; add atomic progress and permanent claim receipts to authoritative settlement.",

@@ -1,6 +1,6 @@
 'use strict';
 const assert = require('node:assert/strict');
-const {validateCatalog, inspectAutomation, evaluate, CORE_CHECKS} = require('./release-policy');
+const {validateCatalog, inspectAutomation, evaluate, fingerprint, CORE_CHECKS} = require('./release-policy');
 const now = Date.now(), checkedAt = new Date(now).toISOString(), fp = 'current-source';
 const system = {id:'REL-01',name:'Acceptance fixture',status:'working',priority:'P0',column:'Verify',scope:'checkpoint',verifiedScope:'fixture',blocker:'none',nextAction:'verify',acceptance:'current package',sources:['fixture'],checks:[],dependsOn:[],plan:['verify'],signoffs:['loop']};
 const catalog = {schemaVersion:1,systems:[system]};
@@ -15,6 +15,18 @@ test('failed and not-run tests cannot pass', () => {assert.equal(inspectAutomati
 test('real expected successful test report passes', () => assert.equal(inspectAutomation({tests:[{fullTestPath:'A',state:'Success'}]},['A']).status,'passed'));
 test('missing checks or manual acceptance keep release blocked', () => {assert(!evaluate(catalog,[],manual,fp,{now}).ready); assert(!evaluate(catalog,checks,null,fp,{now}).ready);});
 test('changed source invalidates all previous evidence', () => assert(!evaluate(catalog,checks,manual,'new-source',{now}).ready));
+test('build configuration XML changes source identity while local user settings stay excluded', () => {
+  const fs=require('node:fs'),path=require('node:path'),os=require('node:os');
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'lhc-build-fingerprint-'));
+  fs.mkdirSync(path.join(root,'Config/UnrealBuildTool'),{recursive:true});
+  fs.writeFileSync(path.join(root,'SugarLustUE.uproject'),'{}');
+  fs.writeFileSync(path.join(root,'Config/UnrealBuildTool/BuildConfiguration.xml'),'<Configuration/>');
+  const before=fingerprint(root);
+  fs.writeFileSync(path.join(root,'Config/UserEngine.ini'),'private local values');
+  assert.equal(fingerprint(root),before);
+  fs.writeFileSync(path.join(root,'Config/UnrealBuildTool/BuildConfiguration.xml'),'<Configuration><WindowsPlatform/></Configuration>');
+  assert.notEqual(fingerprint(root),before);
+});
 test('changed artifact invalidates manual acceptance', () => assert(!evaluate(catalog,checks,{...manual,records:[{...manual.records[0],artifactFingerprint:'old-package'}]},fp,{now}).ready));
 test('stale evidence and future timestamps cannot authorize release', () => {assert(!evaluate(catalog,checks,manual,fp,{now:now+25*3600000}).ready); assert(!evaluate(catalog,checks,manual,fp,{now:now-120000}).ready);});
 test('missing screenshot or log cannot become acceptance', () => assert(!evaluate(catalog,checks,manual,fp,{now,evidenceExists:()=>false}).ready));

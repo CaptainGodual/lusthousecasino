@@ -1,0 +1,25 @@
+{
+  "SchemaVersion": 1,
+  "ActiveEventId": "pepper_hot_streak_internal_v1",
+  "Events": [{
+    "EventId": "pepper_hot_streak_internal_v1",
+    "RulesRevision": 1,
+    "StartsAt": "2099-01-01T00:00:00.000Z",
+    "EndsAt": "2099-01-08T00:00:00.000Z",
+    "ClaimUntil": "2099-01-10T00:00:00.000Z",
+    "EarningEnabled": false,
+    "ClaimsEnabled": false,
+    "EligibleGames": ["SugarLust", "NeonNights"],
+    "TriggerWins": 3,
+    "WinPolicy": "BaseWinPositive",
+    "HeatPolicy": "OnePerWinFromTrigger",
+    "ClientPresentationVersion": 1,
+    "RepeatOwnershipPolicy": "KeepExisting",
+    "Tiers": [
+      {"TierId":"Mild","HeatRequired":1,"RewardId":"pepper_internal_mild_badge_v1","ClaimEnabled":true},
+      {"TierId":"Hot","HeatRequired":5,"RewardId":"pepper_internal_hot_v1","ClaimEnabled":false},
+      {"TierId":"ExtraHot","HeatRequired":15,"RewardId":"pepper_internal_extra_hot_v1","ClaimEnabled":false},
+      {"TierId":"Inferno","HeatRequired":30,"RewardId":"pepper_internal_inferno_v1","ClaimEnabled":false}
+    ]
+  }]
+}

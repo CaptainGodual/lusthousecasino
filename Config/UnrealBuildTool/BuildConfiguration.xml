@@ -1,4 +1,14 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <Configuration xmlns="https://www.unrealengine.com/BuildConfiguration">
-  <WindowsSdkVersion>10.0.28000.0</WindowsSdkVersion>
+  <BuildConfiguration>
+    <bAllowUBAExecutor>false</bAllowUBAExecutor>
+    <bAllowXGE>false</bAllowXGE>
+    <bAllowFASTBuild>false</bAllowFASTBuild>
+    <bAllowSNDBS>false</bAllowSNDBS>
+    <bArtifactRead>false</bArtifactRead>
+    <bArtifactWrites>false</bArtifactWrites>
+  </BuildConfiguration>
+  <WindowsPlatform>
+    <WindowsSdkVersion>10.0.28000.0</WindowsSdkVersion>
+  </WindowsPlatform>
 </Configuration>

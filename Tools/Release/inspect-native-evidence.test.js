@@ -1,0 +1,24 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path');
+const {spawnSync}=require('node:child_process');
+const {expectedTests,inRange,inspectBuild,inspectRun}=require('./inspect-native-evidence');
+let passed=0;
+function test(name,run){run();passed++;console.log('PASS '+name);}
+const expected=['SugarLust.A','SugarLust.B'];
+const report={tests:expected.map(fullTestPath=>({fullTestPath,state:'Success'})),failed:0,notRun:0};
+const sdk={PreferredVisualCppVersions:['14.50.35717-14.50.99999','14.44.35207-14.44.99999'],BannedVisualCppVersions:['14.50.0-14.50.35722','14.44.0-14.44.35210'],MinimumVisualCppVersion:'14.38.33130'};
+const build=version=>'Using Visual Studio '+version+' toolchain (C:/Compiler With Spaces) and Windows 10.0.28000.0 SDK\nResult: Succeeded';
+test('missing or stale report never passes with exit zero',()=>{for(const fresh of [false,true])assert.equal(inspectRun({expected,report:null,exitCode:0,fresh}).status,'blocked');assert.equal(inspectRun({expected,report,exitCode:0,fresh:false}).status,'blocked');});
+test('every required test must execute',()=>assert.equal(inspectRun({expected,report:{tests:[report.tests[0]]},exitCode:0,fresh:true}).status,'failed'));
+test('duplicate reports cannot substitute for required execution',()=>assert.equal(inspectRun({expected,report:{tests:[...report.tests,report.tests[0]]},exitCode:0,fresh:true}).status,'failed'));
+test('test process failure overrides a successful report',()=>assert.equal(inspectRun({expected,report,exitCode:1,fresh:true}).status,'failed'));
+test('all expected tests with fresh successful evidence pass',()=>assert.equal(inspectRun({expected,report,exitCode:0,fresh:true}).status,'passed'));
+test('engine preferred compiler also respects its banned subrange',()=>{assert.equal(inspectBuild(build('14.50.35717'),0,sdk).status,'failed');assert.equal(inspectBuild(build('14.50.35723'),0,sdk).toolchain.preferred,true);});
+test('newer allowed compiler remains visibly nonpreferred',()=>{const result=inspectBuild(build('14.51.36260'),0,sdk);assert.equal(result.status,'passed');assert.equal(result.toolchain.preferred,false);assert.equal(result.toolchain.banned,false);});
+test('an up-to-date build retains its selected compiler warning without inventing an SDK version',()=>{const result=inspectBuild('Visual Studio compiler version 14.51.36260 is newer than latest preferred version 14.50.35717.\nTarget is up to date',0,sdk);assert.equal(result.toolchain.compilerVersion,'14.51.36260');assert.equal(result.toolchain.preferred,false);assert.equal(result.toolchain.windowsSdkVersion,null);});
+test('failed build and missing compiler policy fail closed',()=>{assert.equal(inspectBuild('Access is denied',1,sdk).status,'blocked');assert.equal(inspectBuild('Result: Succeeded',1,sdk).status,'failed');assert.equal(inspectBuild(build('14.51.36260'),0,null).status,'blocked');});
+test('compiler range comparisons include boundaries and enforce minimum',()=>{assert(inRange('14.50.35723','14.50.35723-14.50.99999'));assert(!inRange('14.37.1','14.38.33130'));});
+test('automation discovery rejects empty or out-of-filter inventories',()=>{const root=fs.mkdtempSync(path.join(os.tmpdir(),'lhc-native-inventory-'));const folder=path.join(root,'Source/SugarLustUE/Tests');fs.mkdirSync(folder,{recursive:true});assert.throws(()=>expectedTests(root),/nonempty/);fs.writeFileSync(path.join(folder,'A.cpp'),'IMPLEMENT_SIMPLE_AUTOMATION_TEST(A, "Elsewhere.A", Flags)');assert.throws(()=>expectedTests(root),/outside/);fs.writeFileSync(path.join(folder,'A.cpp'),'IMPLEMENT_SIMPLE_AUTOMATION_TEST(A,\n" SugarLust.A", Flags)');assert.throws(()=>expectedTests(root),/outside/);fs.writeFileSync(path.join(folder,'A.cpp'),'IMPLEMENT_SIMPLE_AUTOMATION_TEST(A, "SugarLust.A", Flags)');assert.deepEqual(expectedTests(root),['SugarLust.A']);});
+test('the CLI cannot invent exit zero when the native exit code is missing',()=>{const result=spawnSync(process.execPath,[path.join(__dirname,'inspect-native-evidence.js'),'--mode','EditorTests','--root',process.cwd()],{encoding:'utf8',windowsHide:true});assert.equal(result.status,1);assert.match(JSON.parse(result.stdout).summary,/exit code is required/);});
+test('malformed fresh report JSON is rejected by the CLI',()=>{const directory=fs.mkdtempSync(path.join(os.tmpdir(),'lhc-native-json-')),reportFile=path.join(directory,'index.json');fs.writeFileSync(reportFile,'{broken');const result=spawnSync(process.execPath,[path.join(__dirname,'inspect-native-evidence.js'),'--mode','EditorTests','--root',process.cwd(),'--report',reportFile,'--started',new Date(Date.now()-1000).toISOString(),'--exit-code','0'],{encoding:'utf8',windowsHide:true});assert.equal(result.status,1);assert.match(JSON.parse(result.stdout).summary,/malformed JSON/);});
+console.log(passed+' native verification policy tests passed.');

@@ -1,4 +1,6 @@
 #include "LustVendWidget.h"
+#include "HotStreakSubsystem.h"
+#include "Engine/GameInstance.h"
 #include "Dom/JsonObject.h"
 #include "HttpModule.h"
 #include "ImageUtils.h"
@@ -352,6 +354,7 @@ void ULustVendWidget::ShowRewardLibrary()
 {
     bShowingLibrary=true;bShowingEarnings=false;bConfirm=false;
     if(bReady && !bBusy)Refresh();
+    if(GetGameInstance())if(auto* Event=GetGameInstance()->GetSubsystem<UHotStreakSubsystem>())Event->Refresh();
 }
 
 TSharedRef<SWidget> ULustVendWidget::BuildRewardLibrary()
@@ -371,11 +374,16 @@ TSharedRef<SWidget> ULustVendWidget::BuildRewardLibrary()
     }
     return SNew(SOverlay).Visibility_Lambda([this]{return bShowingLibrary?EVisibility::Visible:EVisibility::Collapsed;})
         + SOverlay::Slot()[SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(FLinearColor(0,0,0,.95f))]
-        + SOverlay::Slot()[SNew(SScaleBox).Stretch(EStretch::ScaleToFit)[SNew(SBox).WidthOverride(1050).HeightOverride(760)[
+        + SOverlay::Slot()[SNew(SScaleBox).Stretch(EStretch::ScaleToFit)[SNew(SBox).WidthOverride(1050).HeightOverride(860)[
             SNew(SBorder).Padding(28).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(FLinearColor(.055f,.008f,.075f,1))[
                 SNew(SVerticalBox)
                 + SVerticalBox::Slot().AutoHeight().Padding(8)[SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Bold",26)).Text(FText::FromString(TEXT("MY REWARD LIBRARY")))]
                 + SVerticalBox::Slot().AutoHeight().Padding(8)[SNew(STextBlock).AutoWrapText(true).Text(FText::FromString(TEXT("Open owned packages to view your collection. You can return to them any time.")))]
+                + SVerticalBox::Slot().AutoHeight().Padding(8)[SNew(SButton)
+                    .Visibility_Lambda([this]{return Owned.Contains(TEXT("pepper_internal_mild_badge_v1"))?EVisibility::Visible:EVisibility::Collapsed;})
+                    .Text_Lambda([this]{auto* Event=GetGameInstance()?GetGameInstance()->GetSubsystem<UHotStreakSubsystem>():nullptr;return FText::FromString(Event && Event->GetSnapshot().EquippedRewardId==TEXT("pepper_internal_mild_badge_v1")?TEXT("EVENT TITLE: PEPPER'S MILD  |  EQUIPPED"):TEXT("EVENT TITLE: PEPPER'S MILD  |  EQUIP"));})
+                    .IsEnabled_Lambda([this]{auto* Event=GetGameInstance()?GetGameInstance()->GetSubsystem<UHotStreakSubsystem>():nullptr;return Event && !Event->IsBusy() && Event->GetSnapshot().OwnedRewardIds.Contains(TEXT("pepper_internal_mild_badge_v1"));})
+                    .OnClicked_Lambda([this]{if(GetGameInstance())if(auto* Event=GetGameInstance()->GetSubsystem<UHotStreakSubsystem>())Event->RequestEquipMild();return FReply::Handled();})]
                 + SVerticalBox::Slot().FillHeight(1).VAlign(VAlign_Center)[Cards]
                 + SVerticalBox::Slot().AutoHeight().Padding(8)[SNew(STextBlock).AutoWrapText(true).Text_Lambda([this]{return FText::FromString(!bReady?TEXT("Connecting to your reward inventory..."):bBusy?TEXT("Refreshing your collection..."):Owned.Num()==0?TEXT("Your collection is empty. Collect a reward from the machine to get started."):FString::Printf(TEXT("%d OWNED PACKAGES"),Owned.Num()));})]
                 + SVerticalBox::Slot().AutoHeight().Padding(8)[SNew(SHorizontalBox)
